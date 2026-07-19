@@ -125,7 +125,7 @@
 						<button
 							type="button"
 							class="btn join-item btn-sm"
-							class:btn-active={item.value === page}
+							class:btn-primary={item.value === page}
 							aria-current={item.value === page ? 'page' : undefined}
 							onclick={() => onpage(item.value)}>{item.value}</button
 						>

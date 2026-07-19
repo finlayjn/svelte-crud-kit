@@ -1,6 +1,6 @@
 {
 	"name": "@finlayjn/svelte-crud-kit",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "Headless-ish SvelteKit primitives for building internal CRUD admin tools. Built on daisyUI + Tailwind.",
 	"author": "Finlay Nathan",
 	"repository": {
