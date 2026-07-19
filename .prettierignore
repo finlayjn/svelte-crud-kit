@@ -1,0 +1,10 @@
+# Package manager lockfiles
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+bun.lock
+
+# Build output
+dist
+.svelte-kit
+build

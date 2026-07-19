@@ -1,0 +1,8 @@
+@import 'tailwindcss';
+@plugin 'daisyui';
+
+/*
+ * The showcase app lives in `src/routes` and imports the library from `$lib`, so Tailwind's
+ * automatic content detection already scans the component classes during development. Consumers
+ * of the published package add their own `@source "…/@finlayjn/svelte-crud-kit/dist";` line.
+ */
