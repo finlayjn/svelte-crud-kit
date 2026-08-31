@@ -11,6 +11,7 @@ export { useUnsavedGuard } from './unsavedGuard.svelte.js';
 export { createShell, getShell, ShellState, type ShellOptions } from './shell.svelte.js';
 export { EditDraft, type SaveMode } from './editDraft.svelte.js';
 export { AutosaveController, type AutosaveOptions } from './autosave.svelte.js';
+export { saveIndicatorLabel, type SaveIndicatorState } from './saveIndicator.js';
 export {
 	SaveTracker,
 	type SaveTrackerOptions,

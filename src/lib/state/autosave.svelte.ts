@@ -104,4 +104,10 @@ export class AutosaveController<TPatch, TResult = unknown> {
 			this.saving = false;
 		}
 	}
+
+	/** Cancels any pending autosave timer (call on unmount / when replacing the controller). */
+	destroy(): void {
+		clearTimeout(this.#timer);
+		this.#timer = undefined;
+	}
 }
