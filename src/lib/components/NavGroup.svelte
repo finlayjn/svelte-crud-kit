@@ -105,7 +105,8 @@
 		mounted and keep their hrefs registered. That's what lets a collapsed group know it contains the
 		active route and auto-expand when you deep-link into one of its pages.
 	-->
-	<ul class:hidden={!open}>
+	<!-- `whitespace-normal` overrides daisyUI's nowrap on nested menu lists so long labels wrap. -->
+	<ul class="whitespace-normal" class:hidden={!open}>
 		{@render children()}
 	</ul>
 </li>

@@ -4,6 +4,13 @@ All notable changes to `@finlayjn/svelte-crud-kit` are documented here. This pro
 [Semantic Versioning](https://semver.org/). While the package is pre-`1.0`, minor versions may
 include breaking changes.
 
+## Unreleased
+
+### Fixed
+
+- **NavGroup** — long item labels inside a group now wrap instead of overflowing the sidebar.
+  daisyUI sets `white-space: nowrap` on nested menu lists; the group's list now resets it.
+
 ## 0.1.1
 
 ### Fixed
