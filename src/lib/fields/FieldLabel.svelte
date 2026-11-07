@@ -5,10 +5,11 @@
 	/**
 	 * Wraps a form control (input/select/textarea) with a label using daisyUI's own label patterns:
 	 *  - `floating`: `floating-label` (label floats above the control).
-	 *  - `top`: `fieldset` + `fieldset-legend` (label stacked above).
+	 *  - `top`: daisyUI `fieldset` styling with a `fieldset-legend` title stacked above.
 	 *  - `left`: the daisyUI inline label — the `variant` border lives on the wrapping `<label>` and a
 	 *    `.label` span sits before the (bare) control.
 	 *
+	 * Every placement wraps the control in a `<label>`, so the text is the control's accessible name.
 	 * The control is supplied as a snippet that receives the class string to apply, because `left`
 	 * moves the border class off the control and onto the wrapper.
 	 */
@@ -19,7 +20,7 @@
 		variant?: 'input' | 'select' | 'textarea';
 		/** Renders the control; receives the class string it should apply. */
 		control: Snippet<[string]>;
-		/** Extra classes for the wrapping label / fieldset. */
+		/** Extra classes for the wrapping label. */
 		class?: string;
 	}
 
@@ -44,10 +45,10 @@
 		{@render control('')}
 	</label>
 {:else if placement === 'top'}
-	<fieldset class="fieldset {className}">
-		<legend class="fieldset-legend">{label}</legend>
+	<label class="fieldset {className}">
+		<span class="fieldset-legend">{label}</span>
 		{@render control(`${variant} w-full`)}
-	</fieldset>
+	</label>
 {:else}
 	<label class="floating-label w-full {className}">
 		{@render control(`${variant} w-full`)}

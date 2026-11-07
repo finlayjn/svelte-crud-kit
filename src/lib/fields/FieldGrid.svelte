@@ -3,7 +3,7 @@
 
 	interface Props {
 		children: Snippet;
-		/** Number of columns from `sm` up (one column on mobile). */
+		/** Number of columns from `sm` up (one on mobile; `4` is two columns until `lg`). */
 		cols?: 1 | 2 | 3 | 4;
 		class?: string;
 	}
@@ -15,7 +15,7 @@
 		1: 'sm:grid-cols-1',
 		2: 'sm:grid-cols-2',
 		3: 'sm:grid-cols-3',
-		4: 'sm:grid-cols-4'
+		4: 'sm:grid-cols-2 lg:grid-cols-4'
 	};
 </script>
 

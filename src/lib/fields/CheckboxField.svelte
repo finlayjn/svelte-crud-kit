@@ -26,14 +26,8 @@
 </script>
 
 <FieldBox {label} placement={labelPlacement} dense class={className}>
-	<label class="label cursor-pointer justify-start gap-2 text-sm">
-		<input
-			type="checkbox"
-			class="checkbox checkbox-sm"
-			{disabled}
-			bind:checked
-			onchange={() => onchange?.()}
-		/>
-		<span class="label-text">{caption ?? label}</span>
+	<label class="flex cursor-pointer items-center gap-2 text-sm">
+		<input type="checkbox" class="checkbox" {disabled} bind:checked onchange={() => onchange?.()} />
+		<span>{caption ?? label}</span>
 	</label>
 </FieldBox>

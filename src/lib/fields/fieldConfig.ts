@@ -15,6 +15,20 @@ export interface FieldOption {
 	disabled?: boolean;
 }
 
+/** What the choice fields accept as an option: a plain string is both its value and its label. */
+export type FieldOptionInput = string | FieldOption;
+
+/** A named group of options, rendered by `SelectField` as an `<optgroup>`. */
+export interface FieldOptionGroup {
+	label: string;
+	options: readonly FieldOptionInput[];
+}
+
+/** Normalizes an option given as a plain string to a {@link FieldOption}. */
+export function toFieldOption(option: FieldOptionInput): FieldOption {
+	return typeof option === 'string' ? { value: option, label: option } : option;
+}
+
 export interface FieldDefaults {
 	labelPlacement: LabelPlacement;
 }

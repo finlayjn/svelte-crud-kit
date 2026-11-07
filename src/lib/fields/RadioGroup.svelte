@@ -1,11 +1,14 @@
 <script lang="ts">
 	import FieldBox from './FieldBox.svelte';
-	import type { FieldOption, LabelPlacement } from './fieldConfig.js';
+	import { toFieldOption, type FieldOptionInput, type LabelPlacement } from './fieldConfig.js';
 
 	interface Props {
 		label: string;
 		value?: string | null;
-		options: FieldOption[];
+		/** Options as plain strings (value = label) or `{ value, label }`. */
+		options: readonly FieldOptionInput[];
+		/** The radios' shared name (defaults to a generated one, unique on the page). */
+		name?: string;
 		disabled?: boolean;
 		labelPlacement?: LabelPlacement;
 		/** Lay the options out in a row instead of stacked. */
@@ -16,10 +19,13 @@
 		class?: string;
 	}
 
+	const generatedName = $props.id();
+
 	let {
 		label,
 		value = $bindable(''),
 		options,
+		name = generatedName,
 		disabled = false,
 		labelPlacement,
 		inline = false,
@@ -28,8 +34,7 @@
 		class: className = ''
 	}: Props = $props();
 
-	// A stable name shared by the group's inputs (unique across SSR + hydration).
-	const name = $props.id();
+	const items = $derived(options.map(toFieldOption));
 
 	/** With `clearable`, re-clicking the current selection resets it (radios can't be unchecked). */
 	function maybeClear(optionValue: string) {
@@ -41,12 +46,12 @@
 </script>
 
 <FieldBox {label} placement={labelPlacement} class={className}>
-	<div class="flex {inline ? 'flex-row flex-wrap gap-x-5 gap-y-1.5' : 'flex-col gap-2'}">
-		{#each options as option (option.value)}
-			<label class="label cursor-pointer justify-start gap-2 text-sm">
+	<div class={['flex', inline ? 'flex-row flex-wrap gap-x-5 gap-y-2' : 'flex-col gap-2']}>
+		{#each items as option (option.value)}
+			<label class="flex cursor-pointer items-center gap-2 text-sm">
 				<input
 					type="radio"
-					class="radio radio-sm"
+					class="radio"
 					{name}
 					value={option.value}
 					disabled={disabled || option.disabled}
@@ -54,7 +59,7 @@
 					onclick={() => maybeClear(option.value)}
 					onchange={() => onchange?.()}
 				/>
-				<span class="label-text">{option.label}</span>
+				<span>{option.label}</span>
 			</label>
 		{/each}
 	</div>

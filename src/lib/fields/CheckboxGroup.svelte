@@ -1,6 +1,6 @@
 <script lang="ts">
 	import FieldBox from './FieldBox.svelte';
-	import type { FieldOption, LabelPlacement } from './fieldConfig.js';
+	import { toFieldOption, type FieldOptionInput, type LabelPlacement } from './fieldConfig.js';
 
 	/**
 	 * A multi-select backed by an array of strings, rendered as a bordered `fieldset` of checkboxes.
@@ -10,7 +10,8 @@
 		label: string;
 		/** Selected option values. */
 		value?: string[];
-		options: FieldOption[];
+		/** Options as plain strings (value = label) or `{ value, label }`. */
+		options: readonly FieldOptionInput[];
 		disabled?: boolean;
 		labelPlacement?: LabelPlacement;
 		onchange?: () => void;
@@ -26,21 +27,23 @@
 		onchange,
 		class: className = ''
 	}: Props = $props();
+
+	const items = $derived(options.map(toFieldOption));
 </script>
 
 <FieldBox {label} placement={labelPlacement} class={className}>
-	<div class="flex flex-wrap gap-x-5 gap-y-1.5">
-		{#each options as option (option.value)}
-			<label class="label cursor-pointer justify-start gap-2 text-sm">
+	<div class="flex flex-wrap gap-x-5 gap-y-2">
+		{#each items as option (option.value)}
+			<label class="flex cursor-pointer items-center gap-2 text-sm">
 				<input
 					type="checkbox"
-					class="checkbox checkbox-sm"
+					class="checkbox"
 					disabled={disabled || option.disabled}
 					value={option.value}
 					bind:group={value}
 					onchange={() => onchange?.()}
 				/>
-				<span class="label-text">{option.label}</span>
+				<span>{option.label}</span>
 			</label>
 		{/each}
 	</div>

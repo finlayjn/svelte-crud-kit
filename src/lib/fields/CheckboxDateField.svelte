@@ -54,13 +54,13 @@
 </script>
 
 <FieldBox {label} placement={labelPlacement} dense class={className}>
-	<label class="label cursor-pointer justify-start gap-2 text-sm">
-		<input type="checkbox" class="checkbox checkbox-sm" {disabled} {checked} onchange={toggle} />
-		<span class="label-text">{checked ? doneLabel : notDoneLabel}</span>
+	<label class="flex cursor-pointer items-center gap-2 text-sm">
+		<input type="checkbox" class="checkbox" {disabled} {checked} onchange={toggle} />
+		<span>{checked ? doneLabel : notDoneLabel}</span>
 	</label>
 	<input
 		type="date"
-		class="input input-sm ml-auto w-40"
+		class="input ml-auto w-auto"
 		aria-label="{label} date"
 		{disabled}
 		bind:value

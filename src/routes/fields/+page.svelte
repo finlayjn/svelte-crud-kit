@@ -24,6 +24,7 @@
 	let choice = $state('b');
 	let active = $state(true);
 	let trainedOn = $state('');
+	let fruit = $state('');
 
 	const roleOptions: FieldOption[] = [
 		{ value: 'admin', label: 'Admin' },
@@ -81,8 +82,19 @@
 						placeholder="Choose a role…"
 						labelPlacement={placement.id}
 					/>
+					<SelectField
+						label="Fruit (grouped, optional)"
+						bind:value={fruit}
+						groups={[
+							{ label: 'Citrus', options: ['Lemon', 'Orange'] },
+							{ label: 'Berries', options: ['Strawberry', 'Blueberry'] }
+						]}
+						allowEmpty
+						labelPlacement={placement.id}
+					/>
 					<TextArea label="Bio" bind:value={bio} labelPlacement={placement.id} />
 					<ReadonlyField label="Read-only" value={email} labelPlacement={placement.id} />
+					<ReadonlyField label="Read-only (empty)" value={null} labelPlacement={placement.id} />
 				</FieldGrid>
 
 				<div class="mt-4 flex flex-col gap-3">

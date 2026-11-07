@@ -23,6 +23,9 @@ export {
 	setFieldDefaults,
 	getFieldDefaults,
 	type LabelPlacement,
+	toFieldOption,
 	type FieldDefaults,
-	type FieldOption
+	type FieldOption,
+	type FieldOptionInput,
+	type FieldOptionGroup
 } from './fieldConfig.js';
