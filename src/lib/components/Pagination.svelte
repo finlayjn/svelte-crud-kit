@@ -29,8 +29,12 @@
 	}: Props = $props();
 
 	const totalPages = $derived(Math.max(1, Math.ceil(total / pageSize)));
-	const from = $derived(total === 0 ? 0 : (page - 1) * pageSize + 1);
-	const to = $derived(Math.min(page * pageSize, total));
+	/** The page shown as current: an out-of-range `page` (stale URL, rows deleted) is clamped. */
+	const current = $derived(Math.min(Math.max(1, Math.floor(page) || 1), totalPages));
+	const from = $derived(total === 0 ? 0 : (current - 1) * pageSize + 1);
+	const to = $derived(Math.min(current * pageSize, total));
+	const hasPrev = $derived(current > 1);
+	const hasNext = $derived(current < totalPages);
 
 	/** A page button, or a gap placeholder. Each carries a unique `key` for the keyed `{#each}`. */
 	type PageItem = { key: string; value: number } | { key: string; value: null };
@@ -58,8 +62,8 @@
 		if (totalPages <= MAX_VISIBLE) {
 			for (let p = 1; p <= totalPages; p++) slots.push(p);
 		} else {
-			const leftSibling = Math.max(page - SIBLINGS, 1);
-			const rightSibling = Math.min(page + SIBLINGS, totalPages);
+			const leftSibling = Math.max(current - SIBLINGS, 1);
+			const rightSibling = Math.min(current + SIBLINGS, totalPages);
 			const showLeftGap = leftSibling > 2;
 			const showRightGap = rightSibling < totalPages - 1;
 			const edgeCount = MAX_VISIBLE - 2; // numbers shown on the near side when only one gap exists
@@ -102,45 +106,51 @@
 </script>
 
 <!--
-	Layout: on `sm`+ a 3-column grid keeps the pagination centred regardless of how wide the row-count
+	Layout: on `sm`+ a 3-column grid keeps the pagination centered regardless of how wide the row-count
 	text or per-page select are. On mobile the pagination sits on its own row up top, with the row count
 	and the per-page control paired beneath it (a `sm:contents` wrapper lets those two collapse into
 	their own grid cells at `sm`).
+
+	Prev/Next stay focusable at the ends (`aria-disabled` plus a guard), so focus isn't dropped to
+	<body> when the last click reaches the first or last page.
 -->
 <div class="flex flex-col gap-2 py-2 sm:grid sm:grid-cols-3 sm:items-center">
-	<div class="order-first flex justify-center sm:order-none sm:col-start-2 sm:row-start-1">
+	<nav
+		aria-label="Pagination"
+		class="order-first flex justify-center sm:order-none sm:col-start-2 sm:row-start-1"
+	>
 		{#if totalPages > 1}
 			<div class="join">
 				<button
 					type="button"
-					class="btn join-item btn-sm"
-					disabled={page <= 1}
-					onclick={() => onpage(page - 1)}
+					class={['btn join-item', !hasPrev && 'btn-disabled']}
+					aria-disabled={!hasPrev}
+					onclick={() => hasPrev && onpage(current - 1)}
 					aria-label="Previous page">«</button
 				>
 				{#each pages as item (item.key)}
 					{#if item.value === null}
-						<button type="button" class="btn btn-disabled join-item btn-sm">…</button>
+						<span class="btn btn-disabled join-item" aria-hidden="true">…</span>
 					{:else}
 						<button
 							type="button"
-							class="btn join-item btn-sm"
-							class:btn-primary={item.value === page}
-							aria-current={item.value === page ? 'page' : undefined}
+							class={['btn join-item', item.value === current && 'btn-primary']}
+							aria-label="Page {item.value}"
+							aria-current={item.value === current ? 'page' : undefined}
 							onclick={() => onpage(item.value)}>{item.value}</button
 						>
 					{/if}
 				{/each}
 				<button
 					type="button"
-					class="btn join-item btn-sm"
-					disabled={page >= totalPages}
-					onclick={() => onpage(page + 1)}
+					class={['btn join-item', !hasNext && 'btn-disabled']}
+					aria-disabled={!hasNext}
+					onclick={() => hasNext && onpage(current + 1)}
 					aria-label="Next page">»</button
 				>
 			</div>
 		{/if}
-	</div>
+	</nav>
 
 	<div class="flex items-center justify-between gap-3 sm:contents">
 		<div class="text-base-content/70 text-sm sm:col-start-1 sm:row-start-1 sm:justify-self-start">
@@ -148,17 +158,13 @@
 			{total === 1 ? noun : nounPlural}
 		</div>
 
-		<label class="flex items-center gap-1 sm:col-start-3 sm:row-start-1 sm:justify-self-end">
-			<select
-				class="select select-xs w-20"
-				value={pageSize}
-				onchange={(e) => onpageSize(Number(e.currentTarget.value))}
-			>
+		<label class="select w-auto sm:col-start-3 sm:row-start-1 sm:justify-self-end">
+			<span class="label">Per page</span>
+			<select value={pageSize} onchange={(e) => onpageSize(Number(e.currentTarget.value))}>
 				{#each pageSizes as size (size)}
 					<option value={size}>{size}</option>
 				{/each}
 			</select>
-			<span>per page</span>
 		</label>
 	</div>
 </div>
