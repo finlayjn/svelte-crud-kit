@@ -12,6 +12,7 @@ export { default as ListHeader, type Stat } from './components/ListHeader.svelte
 export { default as ListPage } from './components/ListPage.svelte';
 export { default as ListSearch } from './components/ListSearch.svelte';
 export { default as Section } from './components/Section.svelte';
+export { default as ScrollArea } from './components/ScrollArea.svelte';
 export { default as ConfirmModal } from './components/ConfirmModal.svelte';
 export { default as Modal } from './components/Modal.svelte';
 export { default as Toaster } from './components/Toaster.svelte';
