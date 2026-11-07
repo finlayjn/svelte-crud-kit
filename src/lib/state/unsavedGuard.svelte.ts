@@ -7,6 +7,10 @@ import { getConfirm } from './confirm.svelte.js';
 let bypassOnce = false;
 let prompting = false;
 
+function releaseBypass() {
+	bypassOnce = false;
+}
+
 /**
  * Warns before leaving a page with unsaved edits.
  *
@@ -16,11 +20,12 @@ let prompting = false;
  * This wraps {@link beforeNavigate}:
  *  - For an in-app navigation, it cancels, asks via the app's confirm dialog, and — if the user
  *    chooses to discard — re-issues the same navigation (now allowed through by a one-shot bypass).
+ *    Back/forward is replayed with `history.go(delta)`, so the history stack stays intact.
  *  - For a real unload (`willUnload`, e.g. closing the tab or a hard reload), cancelling triggers the
  *    browser's native "Leave site?" prompt, which is the only thing browsers allow there.
  *
  * Requires a confirm store in context (call `createConfirm()` and mount `<ConfirmModal />` in the
- * root layout). Must be called during component initialisation (like other lifecycle hooks); the
+ * root layout). Must be called during component initialization (like other lifecycle hooks); the
  * guard is torn down automatically when the component unmounts. Several guards may be active on the
  * same page (e.g. a profile editor and a settings form); they share one confirm dialog, and a single
  * "Discard" lets the re-issued navigation pass every guard.
@@ -32,7 +37,10 @@ export function useUnsavedGuard(isDirty: () => boolean): void {
 
 	beforeNavigate((navigation) => {
 		// A discard was already confirmed for this navigation; let it through every guard.
-		if (bypassOnce) return;
+		if (bypassOnce) {
+			navigation.complete.then(releaseBypass, releaseBypass);
+			return;
+		}
 		if (!isDirty()) return;
 
 		// A real unload (tab close / hard reload): the browser only permits its own native prompt.
@@ -62,13 +70,18 @@ export function useUnsavedGuard(isDirty: () => boolean): void {
 			prompting = false;
 			if (!ok) return;
 			bypassOnce = true;
+			// Kit has already moved history back to this page; step the same distance again.
+			if (navigation.type === 'popstate') {
+				history.go(navigation.delta);
+				return;
+			}
 			try {
 				// `target` is the URL SvelteKit was already navigating to, not a literal route, so
 				// `resolve()` can't type it; re-issuing the same navigation is intentional here.
 				// eslint-disable-next-line svelte/no-navigation-without-resolve
-				await goto(target, { replaceState: navigation.type === 'popstate' });
+				await goto(target);
 			} finally {
-				bypassOnce = false;
+				releaseBypass();
 			}
 		})();
 	});
