@@ -1,7 +1,16 @@
 <script lang="ts">
 	import { Section } from '$lib/index.js';
 	import { TextField, FieldGrid } from '$lib/fields/index.js';
-	import { EditDraft, AutosaveController, SaveTracker, getToasts } from '$lib/state/index.js';
+	import { onDestroy } from 'svelte';
+	import {
+		EditDraft,
+		AutosaveController,
+		SaveGroup,
+		SaveTracker,
+		getToasts,
+		saveIndicatorLabel,
+		useUnsavedGuard
+	} from '$lib/state/index.js';
 
 	const toasts = getToasts();
 
@@ -35,15 +44,7 @@
 		debounceMs: 600
 	});
 
-	const status = $derived(
-		autosave.saving
-			? 'Saving…'
-			: autosave.dirty
-				? 'Unsaved changes'
-				: autosave.lastSavedAt
-					? 'All changes saved'
-					: ''
-	);
+	const status = $derived(saveIndicatorLabel('autosave', autosave));
 
 	// --- Collection autosave (SaveTracker): several rows, each saved on its own debounce. ---
 	interface Note {
@@ -72,17 +73,25 @@
 		});
 	}
 
-	const trackerStatus = $derived(
-		tracker.state === 'saving'
-			? 'Saving…'
-			: tracker.state === 'pending'
-				? 'Waiting to save'
-				: 'All changes saved'
-	);
+	const trackerStatus = $derived(saveIndicatorLabel('autosave', tracker));
+
+	// One indicator and one unsaved-changes guard for both engines.
+	const group = new SaveGroup();
+	group.register(autosave);
+	group.register(tracker);
+	const pageStatus = $derived(saveIndicatorLabel('autosave', group));
+	useUnsavedGuard(() => group.dirty);
+
+	// Leaving the page sends any pending autosave edits instead of dropping them.
+	onDestroy(() => {
+		autosave.destroy();
+		tracker.destroy();
+	});
 </script>
 
 <div class="p-4">
 	<h1 class="mb-3 text-2xl font-bold">Settings</h1>
+	<p class="text-base-content/70 mb-3 text-sm" role="status">Whole page: {pageStatus}</p>
 
 	<div class="flex flex-col gap-4">
 		<Section title="General">
@@ -116,7 +125,8 @@
 			<div class="flex flex-col gap-2">
 				{#each notes as note (note.id)}
 					<input
-						class="input input-sm w-full"
+						class="input w-full"
+						aria-label="Note {note.id}"
 						value={note.text}
 						oninput={(e) => editNote(note.id, e.currentTarget.value)}
 					/>

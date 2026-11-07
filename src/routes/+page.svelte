@@ -1,10 +1,24 @@
 <script lang="ts">
-	import { DataTable, Pagination, ListHeader, ListPage, Section } from '$lib/index.js';
+	import { DataTable, Pagination, ListHeader, ListPage, Modal, Section } from '$lib/index.js';
 	import type { Column, SortState, PageSize } from '$lib/list/index.js';
-	import { getConfirm, getToasts } from '$lib/state/index.js';
+	import { getConfirm, getToasts, useShellSlots } from '$lib/state/index.js';
 
 	const confirm = getConfirm();
 	const toasts = getToasts();
+
+	useShellSlots({ actions: navActions });
+
+	let modalOpen = $state(false);
+	let busy = $state(false);
+
+	async function saveModal() {
+		if (busy) return;
+		busy = true;
+		await new Promise((resolve) => setTimeout(resolve, 1500));
+		busy = false;
+		modalOpen = false;
+		toasts.success('Saved.');
+	}
 
 	async function tryDelete() {
 		const ok = await confirm.ask({
@@ -63,6 +77,35 @@
 	}
 </script>
 
+{#snippet navActions()}
+	<button type="button" class="btn btn-primary" onclick={() => toasts.info('Navbar action.')}>
+		Action
+	</button>
+{/snippet}
+
+<Modal
+	bind:open={modalOpen}
+	title="Edit record"
+	description="Save takes a moment; the modal can't be dismissed meanwhile."
+	{busy}
+	onclosed={() => toasts.info('Modal closed.')}
+>
+	<p class="py-4">Modal content stays mounted until the exit animation ends.</p>
+	{#snippet actions()}
+		<button
+			type="button"
+			class="btn btn-ghost"
+			aria-disabled={busy}
+			onclick={() => !busy && (modalOpen = false)}
+		>
+			Cancel
+		</button>
+		<button type="button" class="btn btn-primary" aria-disabled={busy} onclick={saveModal}>
+			{busy ? 'Saving…' : 'Save'}
+		</button>
+	{/snippet}
+</Modal>
+
 <div class="h-full">
 	<ListPage>
 		<h1 class="mb-3 text-2xl font-bold">svelte-crud-kit — component showcase</h1>
@@ -74,6 +117,7 @@
 			<button type="button" class="btn btn-sm" onclick={() => toasts.warning('Heads up!')}>
 				Warning toast
 			</button>
+			<button type="button" class="btn btn-sm" onclick={() => (modalOpen = true)}>Modal</button>
 		</div>
 
 		<ListHeader
