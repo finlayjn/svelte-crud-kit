@@ -1,5 +1,5 @@
 import { SvelteMap } from 'svelte/reactivity';
-import type { SaveMode } from './editDraft.svelte.js';
+import type { SaveMode } from './types.js';
 
 /** The aggregate save state, preferring "saving" over "pending" over "saved". */
 export type SaveState = 'saved' | 'pending' | 'saving';

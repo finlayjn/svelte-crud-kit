@@ -8,8 +8,15 @@ export { createListUrl, type ListUrl, type ListUrlOptions } from './listUrl.svel
 export { createConfirm, getConfirm, ConfirmStore, type ConfirmOptions } from './confirm.svelte.js';
 export { createToasts, getToasts, ToastStore, type Toast, type ToastKind } from './toast.svelte.js';
 export { useUnsavedGuard } from './unsavedGuard.svelte.js';
-export { createShell, getShell, ShellState, type ShellOptions } from './shell.svelte.js';
-export { EditDraft, type SaveMode } from './editDraft.svelte.js';
+export {
+	createShell,
+	getShell,
+	ShellState,
+	defaultResolveParent,
+	type ShellOptions
+} from './shell.svelte.js';
+export type { SaveMode } from './types.js';
+export { EditDraft } from './editDraft.svelte.js';
 export { AutosaveController, type AutosaveOptions } from './autosave.svelte.js';
 export { saveIndicatorLabel, type SaveIndicatorState } from './saveIndicator.js';
 export {

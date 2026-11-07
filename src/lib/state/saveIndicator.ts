@@ -1,4 +1,4 @@
-import type { SaveMode } from './editDraft.svelte.js';
+import type { SaveMode } from './types.js';
 
 /** The two flags a save engine exposes, as read for the indicator. */
 export interface SaveIndicatorState {

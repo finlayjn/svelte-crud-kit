@@ -1,4 +1,4 @@
-import type { SaveMode } from './editDraft.svelte.js';
+import type { SaveMode } from './types.js';
 
 /**
  * A framework-agnostic save *engine* for editable detail pages: debounced autosave, single-flight

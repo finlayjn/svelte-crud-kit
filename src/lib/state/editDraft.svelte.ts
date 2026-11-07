@@ -1,13 +1,5 @@
-/**
- * Save behaviour for editable detail pages.
- *
- * - `autosave`: changed fields are flushed automatically (debounced) as you edit.
- * - `manual`: changes are held until you press Save, then sent as one batch.
- *
- * Both modes typically share the same backend patch; only *when* the flush happens differs. The
- * {@link AutosaveController} implements the timing for both.
- */
-export type SaveMode = 'autosave' | 'manual';
+// Re-exported here so the old import path keeps working.
+export type { SaveMode } from './types.js';
 
 /**
  * A tiny editable-draft holder for manual-save forms.
