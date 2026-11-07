@@ -7,6 +7,15 @@ describe('saveIndicatorLabel', () => {
 		expect(saveIndicatorLabel('autosave', { saving: true, dirty: false })).toBe('Saving…');
 	});
 
+	it('reports a failed save after "Saving…"', () => {
+		expect(saveIndicatorLabel('autosave', { saving: false, dirty: true, failed: true })).toBe(
+			"Couldn't save"
+		);
+		expect(saveIndicatorLabel('manual', { saving: true, dirty: true, failed: true })).toBe(
+			'Saving…'
+		);
+	});
+
 	it('distinguishes a dirty draft by mode', () => {
 		expect(saveIndicatorLabel('manual', { saving: false, dirty: true })).toBe('Unsaved changes');
 		expect(saveIndicatorLabel('autosave', { saving: false, dirty: true })).toBe('Waiting to save');

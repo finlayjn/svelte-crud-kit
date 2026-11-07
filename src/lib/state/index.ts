@@ -18,6 +18,7 @@ export {
 export type { SaveMode } from './types.js';
 export { EditDraft } from './editDraft.svelte.js';
 export { AutosaveController, type AutosaveOptions } from './autosave.svelte.js';
+export { isRetryableError } from './retry.js';
 export { saveIndicatorLabel, type SaveIndicatorState } from './saveIndicator.js';
 export {
 	SaveTracker,
