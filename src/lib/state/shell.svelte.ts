@@ -1,4 +1,4 @@
-import { getContext, setContext, type Snippet } from 'svelte';
+import { getContext, onMount, setContext, type Snippet } from 'svelte';
 import { page } from '$app/state';
 import { goto } from '$app/navigation';
 import type { AfterNavigate } from '@sveltejs/kit';
@@ -72,8 +72,17 @@ export class ShellState {
 	/** Whether the last {@link back} used `history.back()` (vs a `goto` fallback), to update `#aligned`. */
 	#lastBackWasHistory = false;
 
-	/** Which nav groups (by id) the user has explicitly expanded/collapsed. */
+	/**
+	 * Which nav groups (by id) the user has explicitly expanded/collapsed. Starts empty so the first
+	 * client render matches SSR; the stored choices are merged in after mount (see
+	 * {@link restoreGroups}).
+	 */
 	#openGroups = $state<Record<string, boolean>>({});
+	/** The choices saved in sessionStorage (plain: read once, written on change). */
+	#savedGroups: Record<string, boolean> = {};
+
+	/** Owner tokens for the navbar slots, so only the component that set a slot clears it. */
+	#slotOwners: Record<'actions' | 'search', object | null> = { actions: null, search: null };
 
 	/** True when the current route has a logical parent (declared via `page.data.back` or derived). */
 	#hasParent = $derived(
@@ -85,11 +94,28 @@ export class ShellState {
 		if (typeof sessionStorage !== 'undefined') {
 			try {
 				const raw = sessionStorage.getItem(STORAGE_KEY);
-				if (raw) this.#openGroups = JSON.parse(raw) as Record<string, boolean>;
+				if (raw) this.#savedGroups = JSON.parse(raw) as Record<string, boolean>;
 			} catch {
 				// Ignore malformed / unavailable storage.
 			}
 		}
+	}
+
+	/* --------------------------------------------------------------------- */
+	/*  Navbar slots                                                         */
+	/* --------------------------------------------------------------------- */
+
+	/** Sets a navbar slot on behalf of `owner` (see {@link useShellSlots}). */
+	claimSlot(slot: 'actions' | 'search', value: Snippet | undefined, owner: object): void {
+		this[slot] = value;
+		this.#slotOwners[slot] = owner;
+	}
+
+	/** Clears a navbar slot, but only if `owner` still holds it. */
+	releaseSlot(slot: 'actions' | 'search', owner: object): void {
+		if (this.#slotOwners[slot] !== owner) return;
+		this[slot] = undefined;
+		this.#slotOwners[slot] = null;
 	}
 
 	/* --------------------------------------------------------------------- */
@@ -203,7 +229,7 @@ export class ShellState {
 	/*  Sidebar open-state memory                                            */
 	/* --------------------------------------------------------------------- */
 
-	/** Whether a nav group is open, honouring the user's stored choice or the group's default. */
+	/** Whether a nav group is open, honoring the user's stored choice or the group's default. */
 	isGroupOpen(id: string, fallback: boolean): boolean {
 		return this.#openGroups[id] ?? fallback;
 	}
@@ -211,22 +237,72 @@ export class ShellState {
 	/** Records a nav group's open/closed state and persists it for the session. */
 	setGroupOpen(id: string, open: boolean): void {
 		this.#openGroups = { ...this.#openGroups, [id]: open };
+		this.#savedGroups = { ...this.#savedGroups, [id]: open };
 		if (typeof sessionStorage !== 'undefined') {
 			try {
-				sessionStorage.setItem(STORAGE_KEY, JSON.stringify(this.#openGroups));
+				sessionStorage.setItem(STORAGE_KEY, JSON.stringify(this.#savedGroups));
 			} catch {
 				// Ignore unavailable storage.
 			}
 		}
 	}
+
+	/**
+	 * Applies the open/closed choices saved earlier in the session. `createShell` calls this after
+	 * mount, so hydration sees the same defaults the server rendered. SSR can't read sessionStorage,
+	 * so a group whose saved state differs from its default still flips after a reload; avoiding
+	 * that would need the state on the server (a cookie read in a load).
+	 */
+	restoreGroups(): void {
+		// Choices made since startup (a group auto-expanding on mount) win over the saved ones.
+		this.#openGroups = { ...this.#savedGroups, ...this.#openGroups };
+	}
 }
 
 /** Creates the shell state and puts it in context. Call once, in the root layout. */
 export function createShell(options: ShellOptions = {}): ShellState {
-	return setContext(KEY, new ShellState(options));
+	const shell = setContext(KEY, new ShellState(options));
+	onMount(() => shell.restoreGroups());
+	return shell;
 }
 
 /** Reads the shell state. Call from any page/component under the root layout. */
 export function getShell(): ShellState {
 	return getContext<ShellState>(KEY);
+}
+
+/** Navbar content a page contributes (see {@link useShellSlots}). */
+export interface ShellSlots {
+	/** Action buttons at the end of the navbar. */
+	actions?: Snippet;
+	/** A search box in the middle of the navbar. */
+	search?: Snippet;
+}
+
+/**
+ * Puts a page's snippets in the navbar while the calling component is mounted, and clears them
+ * when it unmounts, unless another component has taken the slot since (the next page can mount
+ * before the previous one is destroyed). Only the slots named in `slots` are touched. Pass a
+ * function to make the slots reactive:
+ *
+ * ```ts
+ * useShellSlots(() => ({ actions: isAdmin ? actions : undefined, search: searchBox }));
+ * ```
+ *
+ * Call during component initialization. Don't also assign `shell.actions` / `shell.search` directly
+ * for the same slot.
+ */
+export function useShellSlots(slots: ShellSlots | (() => ShellSlots)): void {
+	const shell = getShell();
+	const read = typeof slots === 'function' ? slots : () => slots;
+	const owner = {};
+
+	$effect(() => {
+		const current = read();
+		const names = (['actions', 'search'] as const).filter((name) => name in current);
+		for (const name of names) shell.claimSlot(name, current[name], owner);
+		return () => {
+			for (const name of names) shell.releaseSlot(name, owner);
+		};
+	});
 }

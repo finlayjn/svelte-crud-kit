@@ -13,7 +13,9 @@ export {
 	getShell,
 	ShellState,
 	defaultResolveParent,
-	type ShellOptions
+	useShellSlots,
+	type ShellOptions,
+	type ShellSlots
 } from './shell.svelte.js';
 export type { SaveMode } from './types.js';
 export { EditDraft } from './editDraft.svelte.js';
