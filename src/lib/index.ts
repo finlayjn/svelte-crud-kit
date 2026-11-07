@@ -12,6 +12,7 @@ export { default as ListPage } from './components/ListPage.svelte';
 export { default as ListSearch } from './components/ListSearch.svelte';
 export { default as Section } from './components/Section.svelte';
 export { default as ConfirmModal } from './components/ConfirmModal.svelte';
+export { default as Modal } from './components/Modal.svelte';
 export { default as Toaster } from './components/Toaster.svelte';
 export { default as AppShell } from './components/AppShell.svelte';
 export { default as Navbar } from './components/Navbar.svelte';
