@@ -6,6 +6,7 @@
  * `@finlayjn/svelte-crud-kit/state`.
  */
 export { default as DataTable } from './components/DataTable.svelte';
+export { default as RowLink } from './components/RowLink.svelte';
 export { default as Pagination } from './components/Pagination.svelte';
 export { default as ListHeader, type Stat } from './components/ListHeader.svelte';
 export { default as ListPage } from './components/ListPage.svelte';

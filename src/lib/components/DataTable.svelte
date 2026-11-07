@@ -1,13 +1,27 @@
 <script lang="ts" generics="Row">
 	import { onDestroy, onMount, type Snippet } from 'svelte';
-	import { preloadData } from '$app/navigation';
+	import type { Attachment } from 'svelte/attachments';
+	import { goto, preloadData } from '$app/navigation';
 	import type { Column, SortState } from '../list/types.js';
+	import RowScope from './RowScope.svelte';
+
+	/**
+	 * A snippet-driven table for list pages. Navigable rows: pass `rowHref` and put a `RowLink`
+	 * around the label in each row's first cell. The link is what keyboard and screen reader users
+	 * follow; a click anywhere else on the row follows it too (Cmd/Ctrl/Shift or middle-click opens a
+	 * new tab). Clicks on the row's own controls (links, buttons, inputs) are left alone.
+	 */
 
 	interface Props {
 		columns: Column[];
 		rows: Row[];
 		/** Renders the `<td>` cells for one row. */
 		row: Snippet<[Row]>;
+		/**
+		 * A stable key per row (an id). Without it rows are keyed by position, so a re-sorted or
+		 * filtered list reuses row DOM (and any row state) for different records.
+		 */
+		rowKey?: (row: Row) => string | number;
 		/** Current sort; omit for unsorted tables. */
 		sort?: SortState;
 		/** Called when a sortable header is clicked. The page updates its sort state and refetches. */
@@ -22,12 +36,15 @@
 		zebra?: boolean;
 		/** Optional extra classes for a row's `<tr>` (e.g. to highlight rows that meet some condition). */
 		rowClass?: (row: Row) => string | undefined;
-		/** When set, rows become clickable (pointer + keyboard) and invoke this with the row. */
+		/**
+		 * Called with the row when the row's plain area is clicked, for actions that don't navigate
+		 * (select, expand). It's a mouse shortcut: give the row a real button for keyboard users.
+		 * Ignored when `rowHref` is set.
+		 */
 		onRowClick?: (row: Row) => void;
 		/**
-		 * When set, hovering or focusing a row preloads its destination (code + `load` data) so the
-		 * click navigates instantly — the same behaviour SvelteKit gives `data-sveltekit-preload-data`
-		 * links. Return the resolved href for the row.
+		 * Makes rows navigable: the href for the row's `RowLink`, followed by a click anywhere on the
+		 * row. Hovering or focusing a row also preloads its destination (code + `load` data).
 		 */
 		rowHref?: (row: Row) => string;
 		/**
@@ -50,13 +67,20 @@
 		size = 'md',
 		zebra = true,
 		rowClass,
+		rowKey,
 		onRowClick,
 		rowHref,
 		resizable = false,
 		resizeStorageKey
 	}: Props = $props();
 
-	const sizeClass = $derived(`table-${size}`);
+	const sizeClass: Record<NonNullable<Props['size']>, string> = {
+		xs: 'table-xs',
+		sm: 'table-sm',
+		md: 'table-md',
+		lg: 'table-lg'
+	};
+	const clickable = $derived(Boolean(rowHref || onRowClick));
 
 	const alignClass: Record<NonNullable<Column['align']>, string> = {
 		start: 'text-start',
@@ -125,33 +149,74 @@
 		return w ? `${w}px` : null;
 	}
 
+	const INTERACTIVE = 'a, button, input, select, textarea, label, summary, [role="button"]';
+
+	/** The row a DOM event happened in, if it's one of this table's body rows. */
+	function rowOf(tbody: HTMLElement, target: EventTarget | null): Row | undefined {
+		const tr = target instanceof Element ? target.closest('tr') : null;
+		if (!tr || tr.parentElement !== tbody) return undefined;
+		const index = Number(tr.dataset.index);
+		return Number.isInteger(index) ? rows[index] : undefined;
+	}
+
 	/**
-	 * Fire `onRowClick` only for clicks on the row's plain area — not on an interactive cell element
-	 * (links, buttons, inputs). This lets cells keep their own links (e.g. to a detail page)
-	 * navigating client-side without a `stopPropagation` that would force a full page reload.
+	 * Row clicks, delegated from the body. Clicks on a cell's own controls are left to them, so
+	 * cell links keep navigating client-side without a `stopPropagation`.
 	 */
-	function handleRowClick(event: MouseEvent, r: Row) {
-		const target = event.target as HTMLElement | null;
-		if (target?.closest('a, button, input, select, textarea, label')) return;
-		onRowClick?.(r);
-	}
+	const rowEvents: Attachment<HTMLElement> = (tbody) => {
+		let hovered: Element | null = null;
 
-	function handleRowKeydown(event: KeyboardEvent, r: Row) {
-		if (event.key === 'Enter' || event.key === ' ') {
-			event.preventDefault();
-			onRowClick?.(r);
+		function onClick(event: MouseEvent) {
+			if (event.defaultPrevented || !(event.target instanceof Element)) return;
+			if (event.target.closest(INTERACTIVE)) return;
+			if (event.type === 'auxclick' && event.button !== 1) return;
+			// Don't treat the end of a text selection as a click.
+			if (event.type === 'click' && getSelection()?.toString()) return;
+			const r = rowOf(tbody, event.target);
+			if (r === undefined) return;
+			if (!rowHref) {
+				if (event.type === 'click') onRowClick?.(r);
+				return;
+			}
+			const link = event.target.closest('tr')?.querySelector<HTMLAnchorElement>('a[data-row-link]');
+			const href = link?.href ?? rowHref(r);
+			const newTab = event.type === 'auxclick' || event.metaKey || event.ctrlKey || event.shiftKey;
+			if (newTab) window.open(href, '_blank', 'noopener');
+			else if (link) link.click();
+			// eslint-disable-next-line svelte/no-navigation-without-resolve -- the caller's resolved href
+			else void goto(href);
 		}
-	}
 
-	/** Preload a row's destination on hover/focus. Errors (e.g. offline) are ignored — it's an optimisation. */
-	function preloadRow(r: Row) {
-		if (rowHref) void preloadData(rowHref(r)).catch(() => {});
-	}
+		/** Preloads a row's destination the first time the pointer or focus enters it. */
+		function onEnter(event: Event) {
+			if (!rowHref) return;
+			const tr = event.target instanceof Element ? event.target.closest('tr') : null;
+			if (!tr || tr === hovered) return;
+			hovered = tr;
+			const r = rowOf(tbody, tr);
+			// Errors (e.g. offline) are ignored; it's an optimization.
+			if (r !== undefined) void preloadData(rowHref(r)).catch(() => {});
+		}
+
+		tbody.addEventListener('click', onClick);
+		tbody.addEventListener('auxclick', onClick);
+		tbody.addEventListener('pointerover', onEnter);
+		tbody.addEventListener('focusin', onEnter);
+		return () => {
+			tbody.removeEventListener('click', onClick);
+			tbody.removeEventListener('auxclick', onClick);
+			tbody.removeEventListener('pointerover', onEnter);
+			tbody.removeEventListener('focusin', onEnter);
+		};
+	};
 </script>
 
-<div class="rounded-box border-base-300 bg-base-100 relative min-h-0 flex-1 overflow-auto border">
+<div
+	class="rounded-box border-base-300 bg-base-100 relative min-h-0 flex-1 overflow-auto border"
+	aria-busy={loading}
+>
 	<table
-		class="table {sizeClass} table-pin-rows"
+		class={['table-pin-rows table', sizeClass[size]]}
 		class:table-zebra={zebra}
 		class:table-fixed={resizable}
 	>
@@ -166,16 +231,19 @@
 			<tr>
 				{#each columns as col (col.key)}
 					{@const isSorted = sort?.key === col.key}
+					{@const dirWord = sort?.dir === 'desc' ? 'descending' : 'ascending'}
+					{@const canSort = col.sortable && onsort}
 					<th
 						class="bg-base-200 {col.align ? alignClass[col.align] : ''} {col.class ?? ''}"
 						class:relative={resizable}
+						aria-sort={canSort ? (isSorted ? dirWord : 'none') : undefined}
 					>
-						{#if col.sortable && onsort}
+						{#if canSort}
 							<button
 								type="button"
 								class="hover:text-primary inline-flex cursor-pointer items-center gap-1 font-semibold"
-								onclick={() => onsort(col.key)}
-								aria-label="Sort by {col.label}"
+								onclick={() => onsort?.(col.key)}
+								aria-label={isSorted ? `${col.label}, sorted ${dirWord}` : `Sort by ${col.label}`}
 							>
 								{col.label}
 								{#if isSorted}
@@ -202,19 +270,13 @@
 				{/each}
 			</tr>
 		</thead>
-		<tbody>
-			{#each rows as r, i (i)}
+		<tbody {@attach rowEvents}>
+			{#each rows as r, i (rowKey ? rowKey(r) : i)}
 				<tr
-					class="hover:bg-base-200/60 {rowClass?.(r) ?? ''}"
-					class:cursor-pointer={onRowClick}
-					role={onRowClick ? 'button' : undefined}
-					tabindex={onRowClick ? 0 : undefined}
-					onclick={onRowClick ? (e) => handleRowClick(e, r) : undefined}
-					onmouseenter={rowHref ? () => preloadRow(r) : undefined}
-					onfocus={rowHref ? () => preloadRow(r) : undefined}
-					onkeydown={onRowClick ? (e) => handleRowKeydown(e, r) : undefined}
+					data-index={i}
+					class={['hover:bg-base-200/60', clickable && 'cursor-pointer', rowClass?.(r)]}
 				>
-					{@render row(r)}
+					<RowScope href={rowHref?.(r)}>{@render row(r)}</RowScope>
 				</tr>
 			{:else}
 				{#if !loading}
@@ -231,6 +293,7 @@
 	{#if loading}
 		<div class="bg-base-100/50 absolute inset-0 flex items-start justify-center pt-16">
 			<span class="loading loading-lg loading-spinner text-primary"></span>
+			<span class="sr-only">Loading</span>
 		</div>
 	{/if}
 </div>

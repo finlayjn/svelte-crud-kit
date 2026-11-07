@@ -91,6 +91,7 @@
 		<DataTable
 			{columns}
 			{rows}
+			rowKey={(p) => p.id}
 			{sort}
 			onsort={toggleSort}
 			resizable
