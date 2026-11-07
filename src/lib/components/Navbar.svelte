@@ -3,21 +3,48 @@
 	import { getShell } from '../state/shell.svelte.js';
 
 	interface Props {
-		/** The `for` id of the drawer toggle, so the hamburger opens the sidebar on mobile. */
+		/** The id of the drawer toggle checkbox the menu button opens on mobile. */
 		drawerId: string;
-		/** Navbar title; falls back to `page.data.pageTitle`. */
+		/** Navbar title; falls back to `page.data.pageTitle`, then `page.data.title`. */
 		title?: string;
 		/**
 		 * Whether the content below has scrolled. Adds a separating drop shadow. List pages scroll
 		 * inside their own region, so they typically leave this false (no shadow).
 		 */
 		scrolled?: boolean;
+		/** Whether the mobile drawer is open (sets `aria-expanded` on the menu button). */
+		menuOpen?: boolean;
+		/** Toggles the drawer. Without it, the menu button toggles the `drawerId` checkbox itself. */
+		onmenu?: () => void;
+		/** The menu button's id (so the shell can return focus to it). */
+		menuButtonId?: string;
+		/** The id of the sidebar the menu button controls. */
+		menuControls?: string;
 	}
 
-	let { drawerId, title, scrolled = false }: Props = $props();
+	let {
+		drawerId,
+		title,
+		scrolled = false,
+		menuOpen,
+		onmenu,
+		menuButtonId,
+		menuControls
+	}: Props = $props();
 
 	const shell = getShell();
-	const heading = $derived(title ?? (page.data as { pageTitle?: string }).pageTitle ?? '');
+	const heading = $derived(
+		title ??
+			(page.data as { pageTitle?: string; title?: string }).pageTitle ??
+			(page.data as { title?: string }).title ??
+			''
+	);
+
+	function toggle() {
+		if (onmenu) return onmenu();
+		const input = document.getElementById(drawerId);
+		if (input instanceof HTMLInputElement) input.click();
+	}
 </script>
 
 <header
@@ -27,7 +54,15 @@
 	class:shadow-md={scrolled}
 >
 	<div class="flex min-w-0 shrink items-center gap-1">
-		<label for={drawerId} aria-label="Open sidebar" class="btn btn-square btn-ghost lg:hidden">
+		<button
+			type="button"
+			id={menuButtonId}
+			class="btn btn-square btn-ghost lg:hidden"
+			aria-label="Menu"
+			aria-expanded={menuOpen}
+			aria-controls={menuControls}
+			onclick={toggle}
+		>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
 				class="size-6"
@@ -43,7 +78,7 @@
 					d="M4 6h16M4 12h16M4 18h16"
 				/>
 			</svg>
-		</label>
+		</button>
 
 		{#if shell.canGoBack}
 			<button
@@ -75,7 +110,7 @@
 
 	<!--
 		Middle region: hosts the page's optional search box. A flex-1 spacer even when empty, so the
-		page actions stay pinned to the right. Right-aligned on mobile, centred on larger screens.
+		page actions stay pinned to the right. Right-aligned on mobile, centered on larger screens.
 	-->
 	<div class="flex min-w-0 flex-1 justify-end px-1 sm:justify-center sm:px-2">
 		{#if shell.search}
