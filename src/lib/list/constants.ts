@@ -18,3 +18,6 @@ export const DEFAULT_PAGE_SIZE: PageSize = 25;
  * it, and so the controller owns/clears it alongside page and sort.
  */
 export const LIST_VIEW_PARAMS = ['page', 'size', 'sort', 'dir', 'q'] as const;
+
+/** Longest free-text search term accepted; longer input is cut off (keeps `LIKE` scans cheap). */
+export const SEARCH_MAX_LENGTH = 100;

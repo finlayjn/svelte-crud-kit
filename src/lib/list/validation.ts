@@ -1,5 +1,5 @@
 import * as v from 'valibot';
-import { PAGE_SIZES, DEFAULT_PAGE_SIZE } from './constants.js';
+import { PAGE_SIZES, DEFAULT_PAGE_SIZE, SEARCH_MAX_LENGTH } from './constants.js';
 import type { SortDir } from './types.js';
 
 /**
@@ -25,7 +25,7 @@ export const pageSize = v.optional(v.picklist(PAGE_SIZES as readonly number[]), 
  * filter, not view state), so spread it into the entity's filter entries alongside `status` etc.
  * Capped to keep pathological inputs out of the `LIKE` scan; the server trims and tokenises it.
  */
-export const searchTerm = v.optional(v.pipe(v.string(), v.maxLength(100)));
+export const searchTerm = v.optional(v.pipe(v.string(), v.maxLength(SEARCH_MAX_LENGTH)));
 
 /**
  * Builds the pagination + sort envelope for an entity, given its allowed sort keys. Returns the
