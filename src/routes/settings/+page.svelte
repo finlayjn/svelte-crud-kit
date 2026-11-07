@@ -111,7 +111,7 @@
 		<Section title="Collection autosave (SaveTracker)">
 			<p class="text-base-content/70 mb-3 text-sm">
 				Several independent rows, each debounced and saved on its own key. Saves for a row are
-				serialised, so a slow connection can't commit a stale value out of order.
+				serialized, so a slow connection can't commit a stale value out of order.
 			</p>
 			<div class="flex flex-col gap-2">
 				{#each notes as note (note.id)}

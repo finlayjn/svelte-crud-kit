@@ -23,7 +23,7 @@ export const pageSize = v.optional(v.picklist(PAGE_SIZES as readonly number[]), 
 /**
  * Free-text search term for a list page. Shared by an entity's rows and count/stats queries (it's a
  * filter, not view state), so spread it into the entity's filter entries alongside `status` etc.
- * Capped to keep pathological inputs out of the `LIKE` scan; the server trims and tokenises it.
+ * Capped to keep pathological inputs out of the `LIKE` scan; the server trims and tokenizes it.
  */
 export const searchTerm = v.optional(v.pipe(v.string(), v.maxLength(SEARCH_MAX_LENGTH)));
 

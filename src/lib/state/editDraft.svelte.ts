@@ -10,7 +10,7 @@ export type { SaveMode } from './types.js';
  *
  * Reading the id inside a `$derived.by` is not enough on its own: the source row is usually a fresh
  * object on each refresh, so the derived re-runs and rebuilds the draft even though the id is
- * unchanged. Memoise on the id *value* with an explicit cache so the same record returns the same
+ * unchanged. Memoize on the id *value* with an explicit cache so the same record returns the same
  * instance:
  *
  * ```ts

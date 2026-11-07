@@ -54,7 +54,7 @@
 	/**
 	 * Open state is the user's stored choice (or the default) — so any group can be freely collapsed,
 	 * including the one holding the current page. Navigating *into* a group auto-expands it (below),
-	 * matching the familiar file-tree behaviour of VS Code, Notion, etc.
+	 * matching the familiar file-tree behavior of VS Code, Notion, etc.
 	 */
 	const open = $derived(shell.isGroupOpen(id, defaultOpen));
 

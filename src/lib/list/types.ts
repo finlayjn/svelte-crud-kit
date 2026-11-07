@@ -9,7 +9,7 @@ export interface SortState {
 
 /**
  * A column definition for a data table header. Cell contents are rendered by the page's `row`
- * snippet, so this describes only the header and sort behaviour.
+ * snippet, so this describes only the header and sort behavior.
  */
 export interface Column {
 	/** Stable key; also the server-side sort key when `sortable`. */

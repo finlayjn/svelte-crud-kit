@@ -4,7 +4,7 @@
 		value: string | number;
 		/** Optional sub-label shown in parentheses after the value. */
 		desc?: string;
-		/** Optional extra classes for the value (e.g. `text-success` to colour a figure). */
+		/** Optional extra classes for the value (e.g. `text-success` to color a figure). */
 		valueClass?: string;
 	}
 </script>

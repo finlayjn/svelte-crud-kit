@@ -16,7 +16,7 @@
 		});
 		if (ok)
 			toasts.success(confirm.checkboxChecked ? 'Record and activity deleted.' : 'Record deleted.');
-		else toasts.info('Cancelled.');
+		else toasts.info('Canceled.');
 	}
 
 	interface Person {
