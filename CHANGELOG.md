@@ -4,12 +4,106 @@ All notable changes to `@finlayjn/svelte-crud-kit` are documented here. This pro
 [Semantic Versioning](https://semver.org/). While the package is pre-`1.0`, minor versions may
 include breaking changes.
 
-## Unreleased
+## 0.3.0
+
+### Breaking
+
+- **DataTable** — rows are no longer `role="button"` or focusable. With `rowHref`, put the new
+  `RowLink` around the label in each row's first cell: it's a real `<a>` (Tab, Cmd/Ctrl/middle
+  click and Copy link work), and a click elsewhere on the row follows it (Cmd/Ctrl/Shift or
+  middle-click opens a new tab). `onRowClick` is ignored when `rowHref` is set, so drop it where
+  it only navigated. Without `rowHref`, `onRowClick` is a mouse shortcut; give the row a button
+  for keyboard users.
+- **AutosaveController / SaveTracker** — `destroy()` now sends pending edits in autosave mode
+  (fire and forget) instead of dropping them; `destroy({ flush: false })` restores the old
+  behavior. `onError` fires once per failure streak (plus every failed explicit `flush()` /
+  `commit()`), not on every retry. `SaveState` gains `'failed'`.
+- **Toasts** — errors stay until dismissed unless you pass a `ttl`. Info and success toasts last
+  4s (was 3s), warnings 8s (was 5s).
+- **ConfirmStore** — `pending` is a `ConfirmRequest` (the options plus an `id`) and no longer
+  carries `resolve`. `confirm(id?)` / `cancel(id?)` ignore a stale id.
+- **ListPage** — `class` is appended, as documented, instead of replacing the default `p-4`.
+  Use `padded={false}` to set your own padding.
+- **optionalColor** — now `v.nullish`, so the output type includes `null` (which clears a color).
+- **createListUrl** — `search` is trimmed and capped at 100 characters.
+- **Peer dependency** — `@sveltejs/kit` `^2.12.0` (the kit uses `$app/state`).
+- **Sizes** — Pagination, ListSearch and the field controls (checkboxes, radios, the date input)
+  use daisyUI's default sizes instead of `-xs` / `-sm`. Check layouts that relied on the smaller
+  controls.
+
+### Added
+
+- **Modal** — a daisyUI modal on a native `<dialog>`: bindable `open`, `title`, `description`,
+  `busy` (not dismissible while true), `children` and `actions` snippets, `onclosed` after the
+  exit animation, focus return, nested-dialog closing and an entry animation when created open.
+- **ScrollArea** — a vertical scroller with edge shadows while there's more to scroll; `label`
+  makes it a focusable named region.
+- **RowLink** — the row link for `DataTable` (see above).
+- **DataTable** — `rowKey` keys rows by id; sorted headers get `aria-sort`; the sort button's
+  name includes the direction.
+- **SaveGroup** (`/state`) — aggregates save sources (`dirty`, `saving`, `failed`, optional
+  `flush`) with reactive membership, `register(source)` and `flushAll()`. Works with
+  `saveIndicatorLabel` and `useUnsavedGuard`.
+- **useShellSlots** (`/state`) — sets the navbar `actions` / `search` slots for the calling
+  component and clears them on unmount only if it still owns them. Accepts an object or a getter.
+- **parseListParams** (`/list`) — framework-free URL parser for page, size, sort, direction and
+  search, shared by server loads and `createListUrl`. Also `SEARCH_MAX_LENGTH`.
+- **Save engines** — retries back off exponentially (`retryMaxMs`, default 30s) and skip errors
+  with a 4xx `status` other than 408 and 429 (`shouldRetry`, `isRetryableError`). New `failed`
+  and `error` state; `SaveTracker` gains `saving` and `isFailed(key)`. `saveIndicatorLabel`
+  accepts `failed` and shows "Couldn't save".
+- **ConfirmModal** — `kind: 'warning' | 'neutral'`.
+- **ToastStore** — `pause()` / `resume()`; the Toaster pauses while hovered or focused.
+- **Fields** — options may be plain strings (`FieldOptionInput`, `toFieldOption`);
+  `SelectField` gains `groups` (optgroups) and `allowEmpty`; `ReadonlyField` gains `empty`;
+  `RadioGroup` accepts `name`.
+- **Section** — `level` sets the title's heading level.
+- `defaultResolveParent` is exported from `/state`; `SaveMode` lives in a types module (the old
+  import path still works).
 
 ### Fixed
 
-- **NavGroup** — long item labels inside a group now wrap instead of overflowing the sidebar.
-  daisyUI sets `white-space: nowrap` on nested menu lists; the group's list now resets it.
+- **isActiveLink** — a malformed `%` escape in the URL no longer throws (it crashed every
+  `NavItem` / `NavGroup` during SSR).
+- **DataTable** — Space and Enter in a row's inputs and buttons are no longer hijacked; the size
+  modifier uses literal `table-*` classes.
+- **Save engines** — `flush()` / `commit()` during a save wait for it, then send newer changes;
+  failures no longer retry every debounce forever.
+- **NavItem** — modified clicks (new tab or window) don't clear the back trail; the active link
+  has `aria-current="page"`.
+- **NavGroup** — long item labels wrap instead of overflowing the sidebar. Saved open/closed
+  state is applied after mount, so hydration matches the server render (a group whose saved
+  state differs from its default still flips after a reload).
+- **AppShell** — after navigating to another path, the `<main>` scroller resets to the top and
+  takes focus, so Space and Page Down scroll the page. Uses `h-dvh`.
+- **Navbar** — the menu control is a keyboard-reachable button with `aria-expanded`; Esc closes
+  the drawer and returns focus. The title falls back to `page.data.title`.
+- **useUnsavedGuard** — discarding on Back/Forward replays the move with `history.go`, instead
+  of a `goto` that overwrote the current history entry.
+- **Pagination** — an out-of-range page is clamped; Prev/Next keep focus at the ends; the
+  ellipsis isn't a focusable button.
+- **ConfirmModal** — keeps its content while closing, can't be canceled by a late close of an
+  earlier request, is labeled and described for screen readers, and returns focus to the opener.
+- **Toaster** — renders in the top layer, above open modals; uses `role="status"` for success and
+  info and `role="alert"` for errors and warnings.
+- **ListSearch** — follows `initial` when it changes (no `{#key}` needed) without losing text
+  typed while the URL catches up; the input has an accessible name.
+- **Fields** — removed daisyUI 4's `label-text`; `FieldLabel`'s top placement and `FieldBox`'s
+  left placement now name their controls; the floating legend is at least `text-xs`;
+  `FieldGrid cols={4}` is two columns until `lg`.
+- **Section** — the title is a heading.
+- **Main entry** — no longer pulls in valibot (`NavItem` / `NavGroup` import the matcher
+  directly).
+- Docs: `id` accepts numbers only; `optionalDate` checks the format only; `createListUrl`
+  recommends a server `load` for URL-tied data.
+
+## 0.2.0
+
+### Added
+
+- **saveIndicatorLabel** (`/state`) — maps a save engine's `saving` / `dirty` to the standard
+  label (Saving… / Unsaved changes / Waiting to save / All changes saved).
+- **AutosaveController.destroy()** — cancels the pending debounce timer on unmount.
 
 ## 0.1.1
 
