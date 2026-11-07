@@ -3,7 +3,7 @@
 	import { SvelteSet } from 'svelte/reactivity';
 	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/state';
-	import { isActiveLink } from '../list/index.js';
+	import { isActiveLink } from '../list/active.js';
 	import { getShell } from '../state/shell.svelte.js';
 	import { NAV_GROUP_KEY, type NavGroupApi } from './navContext.js';
 

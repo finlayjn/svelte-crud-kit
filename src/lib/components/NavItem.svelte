@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { getContext, onMount, type Snippet } from 'svelte';
 	import { page } from '$app/state';
-	import { isActiveLink } from '../list/index.js';
+	import { isActiveLink } from '../list/active.js';
 	import { getShell } from '../state/shell.svelte.js';
 	import { NAV_GROUP_KEY, type NavGroupApi } from './navContext.js';
 
@@ -35,15 +35,19 @@
 	/**
 	 * A sidebar link is a top-level navigation: it should clear the in-app back trail (you're jumping
 	 * to a new section, not drilling deeper), so the back button doesn't bounce across sections.
+	 * Modified clicks open a new tab or window and leave this one where it is, so they're skipped.
 	 */
-	function onclick() {
+	function onclick(event: MouseEvent) {
+		if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+			return;
+		}
 		shell.markTopLevelNavigation();
 	}
 </script>
 
 <li>
 	<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-	<a {href} class:menu-active={active} {onclick}>
+	<a {href} class:menu-active={active} aria-current={active ? 'page' : undefined} {onclick}>
 		{#if icon}{@render icon()}{/if}
 		{@render children()}
 		{#if badge}<span class="ms-auto me-6">{@render badge()}</span>{/if}
