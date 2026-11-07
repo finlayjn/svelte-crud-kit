@@ -11,19 +11,13 @@ import { LIST_VIEW_PARAMS } from './constants.js';
 
 /**
  * Canonicalizes a query string for comparison: drops the list-view params (page/size/sort/dir/q),
- * decodes each remaining pair (so `+` and `%20` match), and sorts so order doesn't matter. Built by
- * hand rather than via URLSearchParams to keep this helper free of mutable URL instances.
+ * decodes each remaining pair (so `+` and `%20` match), and sorts so order doesn't matter.
+ * `URLSearchParams` decodes leniently, so a malformed escape such as `?status=%` never throws.
  */
 function filterParams(search: string): string {
-	const raw = search.startsWith('?') ? search.slice(1) : search;
-	if (!raw) return '';
 	const out: string[] = [];
-	for (const pair of raw.split('&')) {
-		if (!pair) continue;
-		const eq = pair.indexOf('=');
-		const key = decodeURIComponent((eq === -1 ? pair : pair.slice(0, eq)).replace(/\+/g, ' '));
+	for (const [key, value] of new URLSearchParams(search)) {
 		if ((LIST_VIEW_PARAMS as readonly string[]).includes(key)) continue;
-		const value = eq === -1 ? '' : decodeURIComponent(pair.slice(eq + 1).replace(/\+/g, ' '));
 		out.push(`${key}=${value}`);
 	}
 	return out.sort().join('&');
