@@ -5,7 +5,14 @@
  * `$app/navigation`, so they run in the browser within a SvelteKit app.
  */
 export { createListUrl, type ListUrl, type ListUrlOptions } from './listUrl.svelte.js';
-export { createConfirm, getConfirm, ConfirmStore, type ConfirmOptions } from './confirm.svelte.js';
+export {
+	createConfirm,
+	getConfirm,
+	ConfirmStore,
+	type ConfirmOptions,
+	type ConfirmKind,
+	type ConfirmRequest
+} from './confirm.svelte.js';
 export { createToasts, getToasts, ToastStore, type Toast, type ToastKind } from './toast.svelte.js';
 export { useUnsavedGuard } from './unsavedGuard.svelte.js';
 export {
