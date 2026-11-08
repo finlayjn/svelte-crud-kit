@@ -257,6 +257,30 @@ connection can't apply writes out of order. Both retry failures with exponential
 4xx errors), report `failed` / `error`, and call `onError` once per failure streak. `flush()`
 waits for a save in flight, and `destroy()` sends pending autosave edits rather than dropping them.
 
+`ChangeQueue` is for records several people may edit at once. Each change is keyed (a later
+change with the same key replaces it) and value changes carry the value they started from, so
+the server can apply them only if nothing changed underneath (compare-and-set) and report a
+conflict otherwise. The server answers each change with `saved`, `conflict` (with the stored
+value and who changed it), `gone` or `rejected`. A `merge` option can resolve conflicts
+automatically (a line-by-line text merge, say); the rest wait in `queue.problems` for
+`keepMine` / `useTheirs`, and the `ChangeProblems` component lists them with those choices. In
+manual mode everything waits for `flush()`; in autosave, `setValue(change, { immediate: true })`
+and `put()` send at once and typing waits for a pause. Have `save` resolve only after the page
+shows the saved data, so values don't flash back.
+
+```ts
+const queue = new ChangeQueue<Change>({
+	mode,
+	key: (c) => `${c.kind}:${c.field}`,
+	save: async (changes) => {
+		const response = await saveChanges({ id, changes });
+		await invalidate(`record:${id}`);
+		return response;
+	}
+});
+queue.setValue({ kind: 'field', field: 'title', value, baseline: record.title });
+```
+
 `SaveGroup` combines several engines into one state for a page:
 
 ```ts

@@ -33,6 +33,12 @@ include breaking changes.
 
 ### Added
 
+- **ChangeQueue** — keyed, compare-and-set edits for records several people edit: conflicts,
+  refused values and removed records collect in `problems` for `keepMine` / `useTheirs`, with an
+  optional `merge` (e.g. text) and `rebase`; manual or autosave timing, one request at a time,
+  retry with backoff, and `SaveSource` for `SaveGroup`.
+- **ChangeProblems** — lists a `ChangeQueue`'s problems with Use theirs / Keep mine per item and
+  for all; every label is overridable and `level` sets the heading level.
 - **Modal** — a daisyUI modal on a native `<dialog>`: bindable `open`, `title`, `description`,
   `busy` (not dismissible while true), `children` and `actions` snippets, `onclosed` after the
   exit animation, focus return, nested-dialog closing and an entry animation when created open.
