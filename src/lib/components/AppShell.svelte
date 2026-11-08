@@ -44,17 +44,37 @@
 	const sidebarId = $derived(`${drawerId}-side`);
 	const menuButtonId = $derived(`${drawerId}-button`);
 
+	/**
+	 * <main> is the page's scroller, and the browser only restores the window's scroll. So the shell
+	 * keeps each page's position itself, by URL: reset before a new page renders (or it renders
+	 * inside the old page's offset, and a short page shows empty space below it), and restored
+	 * when Back or Forward returns to a page.
+	 */
+	// eslint-disable-next-line svelte/prefer-svelte-reactivity -- bookkeeping, never rendered
+	const scrollPositions = new Map<string, number>();
+	const MAX_POSITIONS = 50;
+
 	// Runs after the new page's loads and before it replaces the old one (see `clearSlots`).
 	onNavigate((nav) => {
 		if (nav.from?.route.id !== nav.to?.route.id) shell.clearSlots();
+		if (!main || !nav.from || !nav.to || nav.from.url.pathname === nav.to.url.pathname) return;
+		scrollPositions.delete(nav.from.url.href);
+		scrollPositions.set(nav.from.url.href, main.scrollTop);
+		if (scrollPositions.size > MAX_POSITIONS) {
+			scrollPositions.delete(scrollPositions.keys().next().value as string);
+		}
+		main.scrollTop = 0;
 	});
 
 	afterNavigate((nav) => {
 		shell.recordNavigation(nav);
 		drawerOpen = false;
-		if (!main || !nav.from || !nav.to || nav.type === 'popstate') return;
+		if (!main || !nav.from || !nav.to) return;
 		if (nav.from.url.pathname === nav.to.url.pathname) return;
-		// The browser restores only the window's scroll, and <main> is the scroller here.
+		if (nav.type === 'popstate') {
+			main.scrollTop = scrollPositions.get(nav.to.url.href) ?? 0;
+			return;
+		}
 		if (!nav.to.url.hash) main.scrollTop = 0;
 		// Kit leaves focus on <body> (unless keepFocus or autofocus moved it); move it into the
 		// scroller so Space and Page Down scroll the page.

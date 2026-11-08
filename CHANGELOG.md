@@ -85,6 +85,10 @@ include breaking changes.
 
 ### Fixed
 
+- **AppShell scroll on Back / Forward** — `<main>` is the page's scroller, but only the window's
+  scroll is restored by the browser, so Back kept the previous page's offset: a short page
+  rendered with empty space below it. The shell now resets `<main>` before a new page renders
+  and restores each page's position (by URL) on Back / Forward.
 - **Shadows in dark themes** — the navbar's scroll shadow (`shadow-md`, 10% black) didn't show
   on dark backgrounds, and `ScrollArea`'s edges used the text color, which turns white. Both now
   use `EdgeShadow`: black, stronger in dark themes, and gentler than `ScrollArea`'s old edges. The
