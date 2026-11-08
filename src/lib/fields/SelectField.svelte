@@ -33,8 +33,8 @@
 		value = $bindable(''),
 		options = [],
 		groups = [],
-		placeholder,
-		allowEmpty = false,
+		placeholder: placeholderProp,
+		allowEmpty: allowEmptyProp,
 		disabled = false,
 		labelPlacement,
 		onchange,
@@ -42,7 +42,11 @@
 	}: Props = $props();
 
 	const defaults = getFieldDefaults();
-	const placement = $derived(labelPlacement ?? defaults.labelPlacement);
+	const placement = $derived(
+		labelPlacement ?? defaults.select?.labelPlacement ?? defaults.labelPlacement
+	);
+	const allowEmpty = $derived(allowEmptyProp ?? defaults.select?.allowEmpty ?? false);
+	const placeholder = $derived(placeholderProp ?? defaults.select?.placeholder);
 	const items = $derived(options.map(toFieldOption));
 	const groupItems = $derived(
 		groups.map((group) => ({ label: group.label, options: group.options.map(toFieldOption) }))

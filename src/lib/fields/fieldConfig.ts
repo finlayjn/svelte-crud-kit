@@ -31,6 +31,12 @@ export function toFieldOption(option: FieldOptionInput): FieldOption {
 
 export interface FieldDefaults {
 	labelPlacement: LabelPlacement;
+	/** Defaults for every `SelectField` (each prop still wins). */
+	select?: { labelPlacement?: LabelPlacement; allowEmpty?: boolean; placeholder?: string };
+	/** Defaults for every `RadioGroup`. */
+	radio?: { labelPlacement?: LabelPlacement; inline?: boolean; clearable?: boolean };
+	/** Defaults for every `ReadonlyField`. */
+	readonly?: { empty?: string };
 }
 
 const KEY = Symbol('svelte-crud-kit-field-defaults');
@@ -38,8 +44,9 @@ const KEY = Symbol('svelte-crud-kit-field-defaults');
 const FALLBACK: FieldDefaults = { labelPlacement: 'floating' };
 
 /**
- * Sets app-wide field defaults (e.g. `{ labelPlacement: 'top' }`) for every field rendered below.
- * Call once, high in your tree. Individual fields can still override via their own `labelPlacement`.
+ * Sets app-wide field defaults (e.g. `{ labelPlacement: 'top' }`) for every field rendered below,
+ * plus per-type ones (`select`, `radio`, `readonly`). Call once, high in your tree. A field's own
+ * props always win.
  */
 export function setFieldDefaults(defaults: FieldDefaults): FieldDefaults {
 	return setContext(KEY, defaults);

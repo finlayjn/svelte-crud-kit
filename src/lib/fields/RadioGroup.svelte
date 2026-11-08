@@ -1,6 +1,11 @@
 <script lang="ts">
 	import FieldBox from './FieldBox.svelte';
-	import { toFieldOption, type FieldOptionInput, type LabelPlacement } from './fieldConfig.js';
+	import {
+		getFieldDefaults,
+		toFieldOption,
+		type FieldOptionInput,
+		type LabelPlacement
+	} from './fieldConfig.js';
 
 	interface Props {
 		label: string;
@@ -27,13 +32,17 @@
 		options,
 		name = generatedName,
 		disabled = false,
-		labelPlacement,
-		inline = false,
-		clearable = false,
+		labelPlacement: labelPlacementProp,
+		inline: inlineProp,
+		clearable: clearableProp,
 		onchange,
 		class: className = ''
 	}: Props = $props();
 
+	const defaults = getFieldDefaults();
+	const labelPlacement = $derived(labelPlacementProp ?? defaults.radio?.labelPlacement);
+	const inline = $derived(inlineProp ?? defaults.radio?.inline ?? false);
+	const clearable = $derived(clearableProp ?? defaults.radio?.clearable ?? false);
 	const items = $derived(options.map(toFieldOption));
 
 	/** With `clearable`, re-clicking the current selection resets it (radios can't be unchecked). */

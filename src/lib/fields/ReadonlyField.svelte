@@ -13,9 +13,10 @@
 		class?: string;
 	}
 
-	let { label, value, empty = '—', labelPlacement, class: className = '' }: Props = $props();
+	let { label, value, empty: emptyProp, labelPlacement, class: className = '' }: Props = $props();
 
 	const defaults = getFieldDefaults();
+	const empty = $derived(emptyProp ?? defaults.readonly?.empty ?? '—');
 	const placement = $derived(labelPlacement ?? defaults.labelPlacement);
 	const missing = $derived(value === null || value === undefined || value === '');
 </script>

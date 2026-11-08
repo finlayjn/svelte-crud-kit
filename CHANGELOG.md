@@ -33,6 +33,9 @@ include breaking changes.
 
 ### Added
 
+- **Per-type field defaults** — `setFieldDefaults` also takes `select` (label placement, empty
+  option, placeholder), `radio` (label placement, inline, clearable) and `readonly` (the empty
+  text), so an app sets its house style once instead of on every field.
 - **SaveActions**, **PendingRemovals**, **UnsavedHint** — navbar Save / Discard / status for a
   `ChangeQueue` page, "will be removed when you save" notes with Undo, and a "Not saved yet"
   note; every label is overridable, and `notify` / `confirmDiscard` turn off SaveActions' toasts
