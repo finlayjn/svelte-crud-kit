@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { tick, type Snippet } from 'svelte';
-	import { afterNavigate } from '$app/navigation';
+	import { afterNavigate, onNavigate } from '$app/navigation';
 	import { createShell, defaultResolveParent, type ShellOptions } from '../state/shell.svelte.js';
 	import Navbar from './Navbar.svelte';
 
@@ -43,6 +43,11 @@
 
 	const sidebarId = $derived(`${drawerId}-side`);
 	const menuButtonId = $derived(`${drawerId}-button`);
+
+	// Runs after the new page's loads and before it replaces the old one (see `clearSlots`).
+	onNavigate((nav) => {
+		if (nav.from?.route.id !== nav.to?.route.id) shell.clearSlots();
+	});
 
 	afterNavigate((nav) => {
 		shell.recordNavigation(nav);

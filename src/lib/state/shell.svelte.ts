@@ -111,6 +111,18 @@ export class ShellState {
 		this.#slotOwners[slot] = owner;
 	}
 
+	/**
+	 * Clears both navbar slots, whoever holds them. `AppShell` calls this when a navigation changes
+	 * route: Kit passes the next page's `data` to the old page before unmounting it, and the old
+	 * page's slot snippets (rendered here, outside the page) would otherwise re-render with data
+	 * shaped for another page.
+	 */
+	clearSlots(): void {
+		this.actions = undefined;
+		this.search = undefined;
+		this.#slotOwners = { actions: null, search: null };
+	}
+
 	/** Clears a navbar slot, but only if `owner` still holds it. */
 	releaseSlot(slot: 'actions' | 'search', owner: object): void {
 		if (this.#slotOwners[slot] !== owner) return;

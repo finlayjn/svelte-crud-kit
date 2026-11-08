@@ -63,6 +63,10 @@ include breaking changes.
 
 ### Fixed
 
+- **AppShell** — leaving a route clears the navbar `actions` and `search` before the new page
+  renders. Kit hands the old page the new page's `data` before unmounting it, so its navbar
+  snippets re-rendered with the wrong data (one reading a field the new data lacks threw, and the
+  navigation failed). `ShellState.clearSlots()` is the new method behind it.
 - **isActiveLink** — a malformed `%` escape in the URL no longer throws (it crashed every
   `NavItem` / `NavGroup` during SSR).
 - **DataTable** — Space and Enter in a row's inputs and buttons are no longer hijacked; the size
