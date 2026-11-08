@@ -2,12 +2,15 @@
 
 Reusable building blocks for internal admin / CRUD apps: URL-backed paginated + sortable
 lists, a snippet-driven data table, pagination, list headers, a nav shell with robust
-back-navigation, toasts, confirm dialogs, an unsaved-changes guard, and a small form-field
-kit. Everything themes through your app's daisyUI theme — no hardcoded colors.
+back-navigation, dialogs, toasts, confirm dialogs, an unsaved-changes guard, save engines
+(autosave, manual Save, and compare-and-set edits with conflict handling), a small form-field
+kit, and light / dark / system themes without a flash. Everything takes its colors from your
+app's daisyUI theme; the one exception is the edge shadow, which is always black so it shows in
+dark themes too.
 
 > **Status:** early / pre-release. APIs will change until `1.0`.
 
-> **AI Disclaimer** — This package was developed with the assistance of AI (GitHub Copilot / Claude Opus 4.8). Users should review code for their specific use case.
+> **AI Disclaimer** — This package was developed with the assistance of AI (Claude Opus 5.5). Users should review code for their specific use case.
 
 ## Install
 
@@ -39,6 +42,7 @@ So Tailwind scans the library's classes, add an `@source` line to your CSS entry
 | `@finlayjn/svelte-crud-kit/state`  | Runes controllers (`createListUrl`, `SaveGroup`, …)                 |
 | `@finlayjn/svelte-crud-kit/list`   | Framework-free list types + valibot validation (safe on the server) |
 | `@finlayjn/svelte-crud-kit/fields` | daisyUI form-field wrappers (inputs, selects, checkboxes, …)        |
+| `@finlayjn/svelte-crud-kit/theme`  | Light / dark / system themes, framework-free (`createThemes`)       |
 
 ## Quick start — a list page
 
@@ -125,8 +129,9 @@ Changing the sort, page, page size, or search term updates the URL; SvelteKit re
 with the new params and the table re-renders. There is no client-side fetching to wire up.
 
 `RowLink` is the row's real link (keyboard, Cmd/middle-click and Copy link work); a click
-anywhere else on the row follows it too. For rows that don't navigate, `onRowClick` handles
-plain-area clicks; give such rows a button for keyboard users.
+anywhere else on the row follows it too. For rows that don't navigate (they open a dialog, say),
+put `RowButton` around the label in the first cell and pass the same action to `onRowClick`, so
+keyboard users get a real button and a click anywhere on the row does the same.
 
 ## App shell & navigation
 
@@ -166,7 +171,9 @@ back-navigation — the nav content stays entirely yours.
 
 `NavItem`/`NavGroup` highlight themselves against the current URL (filter-aware), and groups
 remember their open/closed state across navigations. After a navigation to another path the
-shell scrolls its `<main>` to the top and moves focus into it.
+shell scrolls its `<main>` to the top and moves focus into it; Back and Forward restore each
+page's scroll position instead. The navbar slots (below) are cleared whenever the route changes,
+so a page's navbar buttons never render with the next page's data.
 
 A page puts buttons or a search box in the navbar with `useShellSlots`. The slots clear when the
 page unmounts (unless the next page has already taken them). Pass a getter for reactive slots:
@@ -224,7 +231,7 @@ useUnsavedGuard(() => draft.dirty);
 Errors stay on screen until dismissed; other toasts dismiss themselves (paused while hovered).
 The toast stack sits in the top layer, so it shows above open modals.
 
-### Modal and ScrollArea
+### Modal, FormModal and ScrollArea
 
 `Modal` wraps a native `<dialog class="modal">`. While `busy` is true it can't be dismissed, its
 content stays mounted through the exit animation (reset forms in `onclosed`), and focus returns
@@ -248,6 +255,56 @@ to the opener.
 
 In a height-capped flex column with a `ScrollArea`, give the other children `shrink-0` (the
 modal's title and actions already have it).
+
+`FormModal` is a `Modal` holding a form, with Cancel and a submit button. It stays busy (and
+can't be dismissed) while `onsubmit` runs; close it from `onsubmit` when that succeeds, and reset
+the fields in `onclosed`:
+
+```svelte
+<FormModal
+	bind:open
+	title="New widget"
+	submitLabel="Create widget"
+	canSubmit={name.trim() !== ''}
+	onsubmit={create}
+	onclosed={() => (name = '')}
+>
+	<TextField label="Name" bind:value={name} />
+</FormModal>
+```
+
+### Panels that fail
+
+`PanelBoundary` keeps one panel's rendering error from taking down the page: the panel is
+replaced by a message with Try again, and the error is logged. The message, the retry label, the
+error handler and the whole failure UI (`failed` snippet) are overridable.
+
+```svelte
+<PanelBoundary label="the activity feed">
+	<ActivityFeed />
+</PanelBoundary>
+```
+
+### After a command
+
+`reportError` logs a failure with its cause and returns what to show the user: the server's own
+message for a refused request (a 4xx `error()`), otherwise your fallback. `reload` reruns every
+`load` that declared one of the keys with `depends()`, and logs rather than throws if that fails.
+
+```ts
+import { getToasts, reload, reportError } from '@finlayjn/svelte-crud-kit/state';
+
+const toasts = getToasts();
+
+async function archive() {
+	try {
+		await archiveWidget(id); // a remote command
+		await reload(`widget:${id}`);
+	} catch (error) {
+		toasts.error(reportError('widgets', error, 'Could not archive the widget.'));
+	}
+}
+```
 
 ### Saving edits
 
@@ -286,9 +343,51 @@ queue.setValue({ kind: 'field', field: 'title', value, baseline: record.title })
 values and controls, and each change carries the value it started from, so the server writes
 only changed fields (compare them with `sameFieldValue`).
 
+On the server, apply a change only if the stored value still equals its `baseline`, and answer
+each change in order. Use `sameFieldValue` on both sides so they agree on what changed:
+
+```ts
+import {
+	sameFieldValue,
+	type ChangeResult,
+	type FieldChange
+} from '@finlayjn/svelte-crud-kit/state';
+
+function applyChanges(stored: Record<string, unknown>, changes: FieldChange[]) {
+	const next = { ...stored };
+	const results: ChangeResult[] = changes.map((change) => {
+		const current = stored[change.field];
+		if (sameFieldValue(change.baseline, current)) {
+			next[change.field] = change.value;
+			return { status: 'saved' };
+		}
+		// Someone else changed it; if they set the same value, there's nothing to resolve.
+		return sameFieldValue(change.value, current)
+			? { status: 'saved', value: current }
+			: { status: 'conflict', current, updatedBy: null };
+	});
+	return { next, results }; // write `next` (only accepted fields differ), return `{ results }`
+}
+```
+
+A value the record's rules refuse is `{ status: 'rejected', message }`, and a change to a record
+that no longer exists is `{ status: 'gone' }`.
+
 For the page around a `ChangeQueue`: `SaveActions` (navbar Save, Discard and status),
 `ChangeProblems` (the conflict list), `PendingRemovals` and `UnsavedHint` (manual-mode notes), and
-`useUnsavedGuard(() => queue.blocksLeaving)`.
+`useUnsavedGuard(() => queue.blocksLeaving)`. Their text is overridable through `labels` (or
+`message` / `text` props), and `SaveActions` takes `notify={false}` and `confirmDiscard={false}`
+to skip its toasts and its Discard confirmation.
+
+```svelte
+{#snippet actions()}
+	<SaveActions queue={editor.queue}>
+		<button type="button" class="btn btn-outline btn-error btn-sm" onclick={remove}>Delete</button>
+	</SaveActions>
+{/snippet}
+
+<ChangeProblems queue={editor.queue} label={(change) => LABELS[change.field]} />
+```
 
 `SaveGroup` combines several engines into one state for a page:
 
@@ -323,6 +422,79 @@ See the JSDoc for the full API.
 <RadioGroup label="Status" bind:value={status} options={['Open', 'Closed']} inline clearable />
 <ReadonlyField label="Owner" value={ownerName} empty="Not set" />
 ```
+
+Set the house style once, high in the tree; a field's own props still win:
+
+```ts
+import { setFieldDefaults } from '@finlayjn/svelte-crud-kit/fields';
+
+setFieldDefaults({
+	labelPlacement: 'top',
+	select: { allowEmpty: true, placeholder: 'Choose…' },
+	radio: { inline: true },
+	readonly: { empty: 'Not set' }
+});
+```
+
+`TokenSelect` is a multi-select as chips with an "add" dropdown, easier on phones than a native
+multi-select. Options are `{ value, label }` plus any fields of your own, which a `chip` snippet
+can show:
+
+```svelte
+<TokenSelect label="Tags" bind:value={tagIds} options={tags}>
+	{#snippet chip(tag)}
+		<span>{tag.label}</span>
+		<span class="text-xs opacity-70">{tag.description}</span>
+	{/snippet}
+</TokenSelect>
+```
+
+## Themes
+
+`/theme` handles light, dark and "follow the system" without a flash of the wrong theme. The
+effective theme lives in a cookie, so the server can stamp `<html data-theme>` before paint, and
+the browser resolves "system" and follows changes to it. It has no framework imports.
+
+```ts
+// src/lib/theme.ts
+import { createThemes } from '@finlayjn/svelte-crud-kit/theme';
+
+// daisyUI theme names; defaultPreference is used when the user hasn't chosen (default "system").
+export const themes = createThemes({ light: 'light', dark: 'dark' });
+```
+
+```html
+<!-- src/app.html -->
+<html lang="en" data-theme="%theme%"></html>
+```
+
+```ts
+// src/hooks.server.ts
+import type { Handle } from '@sveltejs/kit';
+import { themes } from '$lib/theme';
+
+export const handle: Handle = async ({ event, resolve }) => {
+	// The user's stored preference ('light' | 'dark' | 'system'), if you keep one.
+	const preference = event.locals.user?.theme;
+	const { theme, persist } = themes.forRequest(preference, event.cookies.get(themes.cookie));
+	if (persist) event.cookies.set(themes.cookie, theme, themes.cookieOptions);
+	return resolve(event, {
+		transformPageChunk: ({ html }) => html.replace('%theme%', theme)
+	});
+};
+```
+
+```svelte
+<!-- src/routes/+layout.svelte -->
+<script lang="ts">
+	import { themes } from '$lib/theme';
+
+	let { data, children } = $props();
+	$effect(() => themes.apply(data.user?.theme));
+</script>
+```
+
+`THEME_PREFERENCES` lists the choices for a settings control.
 
 ## Development
 
