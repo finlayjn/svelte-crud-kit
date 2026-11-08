@@ -124,6 +124,17 @@ export class ChangeQueue<TChange extends object> {
 		return this.failing && this.pending.size > 0;
 	}
 
+	/**
+	 * Whether leaving the page would lose something, for `useUnsavedGuard`: any unsaved change in
+	 * manual mode; in autosave (which sends pending changes on the way out) only unresolved problems
+	 * and failing saves.
+	 */
+	get blocksLeaving(): boolean {
+		return this.mode === 'manual'
+			? this.dirty
+			: this.problems.size > 0 || (this.failing && this.pending.size > 0);
+	}
+
 	/** The unsaved change stored under `key`, if any. */
 	get(key: string): TChange | undefined {
 		return this.pending.get(key);

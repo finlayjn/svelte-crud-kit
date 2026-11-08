@@ -7,13 +7,19 @@
  */
 export { default as DataTable } from './components/DataTable.svelte';
 export { default as RowLink } from './components/RowLink.svelte';
+export { default as RowButton } from './components/RowButton.svelte';
 export { default as Pagination } from './components/Pagination.svelte';
 export { default as ListHeader, type Stat } from './components/ListHeader.svelte';
 export { default as ListPage } from './components/ListPage.svelte';
 export { default as ListSearch } from './components/ListSearch.svelte';
 export { default as Section } from './components/Section.svelte';
 export { default as ScrollArea } from './components/ScrollArea.svelte';
+export { default as EdgeShadow } from './components/EdgeShadow.svelte';
 export { default as ChangeProblems } from './components/ChangeProblems.svelte';
+export { default as SaveActions } from './components/SaveActions.svelte';
+export { default as PendingRemovals } from './components/PendingRemovals.svelte';
+export { default as UnsavedHint } from './components/UnsavedHint.svelte';
+export { default as PanelBoundary } from './components/PanelBoundary.svelte';
 export { default as ConfirmModal } from './components/ConfirmModal.svelte';
 export { default as Modal } from './components/Modal.svelte';
 export { default as Toaster } from './components/Toaster.svelte';

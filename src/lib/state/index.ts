@@ -35,8 +35,15 @@ export {
 	type ValueChange
 } from './changeQueue.svelte.js';
 export { isRetryableError } from './retry.js';
+export {
+	errorMessage,
+	reportError,
+	type ErrorMessageOptions,
+	type ReportErrorOptions
+} from './errors.js';
+export { reload } from './reload.js';
 export { SaveGroup, type SaveSource } from './saveGroup.svelte.js';
-export { saveIndicatorLabel, type SaveIndicatorState } from './saveIndicator.js';
+export { saveIndicatorLabel, changeQueueLabel, type SaveIndicatorState } from './saveIndicator.js';
 export {
 	SaveTracker,
 	type SaveTrackerOptions,

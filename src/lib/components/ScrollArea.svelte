@@ -1,4 +1,5 @@
 <script lang="ts">
+	import EdgeShadow from './EdgeShadow.svelte';
 	import type { Snippet } from 'svelte';
 	import type { Attachment } from 'svelte/attachments';
 	import type { ClassValue } from 'svelte/elements';
@@ -60,18 +61,6 @@
 	>
 		<div class={contentClass}>{@render children()}</div>
 	</div>
-	<div
-		aria-hidden="true"
-		class={[
-			'from-base-content/15 pointer-events-none absolute inset-x-0 top-0 h-4 bg-linear-to-b to-transparent transition-opacity motion-reduce:transition-none',
-			moreAbove ? 'opacity-100' : 'opacity-0'
-		]}
-	></div>
-	<div
-		aria-hidden="true"
-		class={[
-			'from-base-content/15 pointer-events-none absolute inset-x-0 bottom-0 h-4 bg-linear-to-t to-transparent transition-opacity motion-reduce:transition-none',
-			moreBelow ? 'opacity-100' : 'opacity-0'
-		]}
-	></div>
+	<EdgeShadow side="top" visible={moreAbove} />
+	<EdgeShadow side="bottom" visible={moreBelow} />
 </div>

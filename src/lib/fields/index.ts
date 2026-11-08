@@ -19,6 +19,7 @@ export { default as CheckboxGroup } from './CheckboxGroup.svelte';
 export { default as RadioGroup } from './RadioGroup.svelte';
 export { default as ReadonlyField } from './ReadonlyField.svelte';
 export { default as FieldGrid } from './FieldGrid.svelte';
+export { default as TokenSelect } from './TokenSelect.svelte';
 export {
 	setFieldDefaults,
 	getFieldDefaults,

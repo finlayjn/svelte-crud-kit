@@ -29,3 +29,15 @@ export function saveIndicatorLabel(mode: SaveMode, state: SaveIndicatorState): s
 	if (state.dirty) return mode === 'manual' ? 'Unsaved changes' : 'Waiting to save';
 	return 'All changes saved';
 }
+
+/**
+ * {@link saveIndicatorLabel} for a `ChangeQueue`: `attention` (default "Needs your attention")
+ * while some changes wait in its conflict list, the usual labels otherwise.
+ */
+export function changeQueueLabel(
+	mode: SaveMode,
+	queue: SaveIndicatorState & { problems: { size: number } },
+	attention = 'Needs your attention'
+): string {
+	return queue.problems.size > 0 ? attention : saveIndicatorLabel(mode, queue);
+}

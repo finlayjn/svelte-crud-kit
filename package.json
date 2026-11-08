@@ -64,6 +64,10 @@
 		"./fields": {
 			"types": "./dist/fields/index.d.ts",
 			"svelte": "./dist/fields/index.js"
+		},
+		"./theme": {
+			"types": "./dist/theme/index.d.ts",
+			"default": "./dist/theme/index.js"
 		}
 	},
 	"peerDependencies": {

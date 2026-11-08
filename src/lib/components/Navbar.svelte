@@ -1,4 +1,5 @@
 <script lang="ts">
+	import EdgeShadow from './EdgeShadow.svelte';
 	import { page } from '$app/state';
 	import { getShell } from '../state/shell.svelte.js';
 
@@ -8,7 +9,7 @@
 		/** Navbar title; falls back to `page.data.pageTitle`, then `page.data.title`. */
 		title?: string;
 		/**
-		 * Whether the content below has scrolled. Adds a separating drop shadow. List pages scroll
+		 * Whether the content below has scrolled. Shows a shadow under the bar. List pages scroll
 		 * inside their own region, so they typically leave this false (no shadow).
 		 */
 		scrolled?: boolean;
@@ -48,11 +49,10 @@
 </script>
 
 <header
-	class="navbar bg-base-200 z-10 min-h-14 shrink-0 gap-1 px-2 transition-shadow"
-	class:border-b={!scrolled}
-	class:border-base-300={!scrolled}
-	class:shadow-md={scrolled}
+	class="navbar bg-base-200 border-base-300 relative z-10 min-h-14 shrink-0 gap-1 border-b px-2"
 >
+	<!-- Hangs below the bar, over the content scrolled under it. -->
+	<EdgeShadow side="top" visible={scrolled} class="top-full" />
 	<div class="flex min-w-0 shrink items-center gap-1">
 		<button
 			type="button"

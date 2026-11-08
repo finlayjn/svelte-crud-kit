@@ -33,6 +33,22 @@ include breaking changes.
 
 ### Added
 
+- **SaveActions**, **PendingRemovals**, **UnsavedHint** — navbar Save / Discard / status for a
+  `ChangeQueue` page, "will be removed when you save" notes with Undo, and a "Not saved yet"
+  note; every label is overridable, and `notify` / `confirmDiscard` turn off SaveActions' toasts
+  and Discard confirmation. `ChangeQueue.blocksLeaving` and `changeQueueLabel` cover the
+  unsaved-changes guard and the status text.
+- **PanelBoundary** — keeps a panel's rendering error from taking down the page, with Try again;
+  message, retry label, error handler and the whole failure UI are overridable.
+- **RowButton** — the button version of `RowLink`, for `DataTable` rows that open a dialog.
+- **TokenSelect** (`/fields`) — a chip multi-select with an "add" dropdown; a `chip` snippet
+  renders custom chip content.
+- **EdgeShadow** — the shared edge shadow behind the navbar and `ScrollArea`.
+- **errorMessage / reportError** and **reload** (`/state`) — show a refused request's message or a
+  fallback while logging the cause; rerun `load`s by `depends` key after a command.
+- **`/theme`** — `createThemes({ light, dark })`: light / dark / system with a cookie, so the
+  server can stamp `data-theme` before paint (`forRequest`) and the client follows the system
+  (`apply`). `defaultPreference` (default "system") covers users who haven't chosen.
 - **ChangeQueue** — keyed, compare-and-set edits for records several people edit: conflicts,
   refused values and removed records collect in `problems` for `keepMine` / `useTheirs`, with an
   optional `merge` (e.g. text) and `rebase`; manual or autosave timing, one request at a time,
@@ -69,6 +85,10 @@ include breaking changes.
 
 ### Fixed
 
+- **Shadows in dark themes** — the navbar's scroll shadow (`shadow-md`, 10% black) didn't show
+  on dark backgrounds, and `ScrollArea`'s edges used the text color, which turns white. Both now
+  use `EdgeShadow`: black, stronger in dark themes, and gentler than `ScrollArea`'s old edges. The
+  navbar keeps its bottom border while scrolled, so the page no longer shifts by a pixel.
 - **AppShell** — leaving a route clears the navbar `actions` and `search` before the new page
   renders. Kit hands the old page the new page's `data` before unmounting it, so its navbar
   snippets re-rendered with the wrong data (one reading a field the new data lacks threw, and the

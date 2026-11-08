@@ -281,6 +281,10 @@ const queue = new ChangeQueue<Change>({
 queue.setValue({ kind: 'field', field: 'title', value, baseline: record.title });
 ```
 
+For the page around a `ChangeQueue`: `SaveActions` (navbar Save, Discard and status),
+`ChangeProblems` (the conflict list), `PendingRemovals` and `UnsavedHint` (manual-mode notes), and
+`useUnsavedGuard(() => queue.blocksLeaving)`.
+
 `SaveGroup` combines several engines into one state for a page:
 
 ```ts
