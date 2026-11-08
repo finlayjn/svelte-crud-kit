@@ -33,6 +33,8 @@ include breaking changes.
 
 ### Added
 
+- **FormModal** — a `Modal` holding a form, with Cancel and a submit button; busy (and not
+  dismissible) while `onsubmit` runs.
 - **Per-type field defaults** — `setFieldDefaults` also takes `select` (label placement, empty
   option, placeholder), `radio` (label placement, inline, clearable) and `readonly` (the empty
   text), so an app sets its house style once instead of on every field.

@@ -22,6 +22,7 @@ export { default as UnsavedHint } from './components/UnsavedHint.svelte';
 export { default as PanelBoundary } from './components/PanelBoundary.svelte';
 export { default as ConfirmModal } from './components/ConfirmModal.svelte';
 export { default as Modal } from './components/Modal.svelte';
+export { default as FormModal } from './components/FormModal.svelte';
 export { default as Toaster } from './components/Toaster.svelte';
 export { default as AppShell } from './components/AppShell.svelte';
 export { default as Navbar } from './components/Navbar.svelte';
