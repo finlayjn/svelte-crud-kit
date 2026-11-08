@@ -39,7 +39,6 @@
 			class="{cls} {className}"
 			placeholder={resolvedPlaceholder}
 			bind:value
-			oninput={() => onchange?.()}
-		></textarea>
+			oninput={() => onchange?.()}></textarea>
 	{/snippet}
 </FieldLabel>

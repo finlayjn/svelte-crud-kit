@@ -281,7 +281,7 @@
 			{:else}
 				{#if !loading}
 					<tr>
-						<td colspan={columns.length} class="py-8 text-center text-base-content/60">
+						<td colspan={columns.length} class="text-base-content/60 py-8 text-center">
 							{empty}
 						</td>
 					</tr>
