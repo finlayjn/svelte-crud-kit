@@ -50,13 +50,20 @@ export interface ChangeQueueOptions<TChange extends object> {
 	/**
 	 * "Keep mine" for a conflict on a change that isn't a {@link ValueChange} (a removal that checks
 	 * other values, say): returns the change re-based on what's stored now, or `null` to drop it.
+	 * Without it, "Keep mine" sends such a change again unchanged, so it usually conflicts again.
 	 */
 	rebase?: (change: TChange) => TChange | null;
 	/** Compares a value with its baseline to drop an edit that was undone (default `Object.is`). */
 	equals?: (a: unknown, b: unknown) => boolean;
-	/** Called once per run of failed saves (network or server errors), and for each failed flush. */
+	/**
+	 * Called once per run of failed automatic saves (network or server errors), and for every
+	 * failed explicit {@link ChangeQueue.flush} (a Save click).
+	 */
 	onError?: (error: unknown) => void;
-	/** Pause after typing before an autosave, in ms (default 1500); also the retry backoff base. */
+	/**
+	 * Pause after typing before an autosave, in ms (default 1500). Retries wait twice this, doubling
+	 * up to `retryMaxMs`.
+	 */
 	debounceMs?: number;
 	/** Longest wait between automatic retries, in ms (default 30000). */
 	retryMaxMs?: number;
@@ -93,8 +100,10 @@ export class ChangeQueue<TChange extends object> {
 	saving = $state(false);
 	/** Whether a save has succeeded since the queue was created. */
 	saved = $state(false);
-	/** The last save failed with a network or server error (autosave retries it). */
+	/** The last save failed (a network or server error, or a refused request). */
 	failing = $state(false);
+	/** An automatic retry of the failed save is scheduled (autosave, retryable errors only). */
+	retrying = $state(false);
 
 	#opts: ChangeQueueOptions<TChange>;
 	#debounceMs: number;
@@ -182,7 +191,7 @@ export class ChangeQueue<TChange extends object> {
 		this.problems.delete(key);
 	}
 
-	/** Sends what's pending (autosave) after the usual pause; for callers that edited via `drop`. */
+	/** Sends what's pending at once (autosave only); for callers that edited via `drop`. */
 	touch(): void {
 		this.#schedule(0);
 	}
@@ -190,6 +199,7 @@ export class ChangeQueue<TChange extends object> {
 	/** Drops every unsaved change and problem (manual mode's Discard). */
 	discardAll(): void {
 		clearTimeout(this.#timer);
+		this.retrying = false;
 		this.pending.clear();
 		this.problems.clear();
 	}
@@ -232,23 +242,29 @@ export class ChangeQueue<TChange extends object> {
 
 	/** Saves on leaving a field (autosave only). */
 	blur(): void {
-		if (this.mode === 'autosave') void this.flush();
+		if (this.mode === 'autosave') void this.#flush(false);
 	}
 
 	/**
 	 * Sends every pending change that isn't waiting on a problem, and waits for it. If a save is in
-	 * flight, waits for it first. Never rejects (see `onError`).
+	 * flight, waits for it first. Never rejects; a failure is reported through `onError` every time.
 	 */
-	async flush(): Promise<void> {
+	flush(): Promise<void> {
+		return this.#flush(true);
+	}
+
+	/** `explicit`: the user asked (Save, Keep mine), so a failure is always reported. */
+	async #flush(explicit: boolean): Promise<void> {
 		clearTimeout(this.#timer);
+		this.retrying = false;
 		if (this.#inflight) {
 			await this.#inflight;
-			if (this.#sendable().length > 0) return this.flush();
+			if (this.#sendable().length > 0) return this.#flush(explicit);
 			return;
 		}
 		const batch = this.#sendable();
 		if (batch.length === 0) return;
-		this.#inflight = this.#send(batch);
+		this.#inflight = this.#send(batch, explicit);
 		try {
 			await this.#inflight;
 		} finally {
@@ -267,25 +283,33 @@ export class ChangeQueue<TChange extends object> {
 	destroy(options: { flush?: boolean } = {}): void {
 		const { flush = this.mode === 'autosave' } = options;
 		clearTimeout(this.#timer);
+		this.retrying = false;
 		this.#destroyed = true;
-		if (flush && this.#sendable().length > 0) void this.flush();
+		if (flush && this.#sendable().length > 0) void this.#flush(false);
 	}
 
 	#schedule(ms: number): void {
 		if (this.mode !== 'autosave' || this.#destroyed) return;
 		clearTimeout(this.#timer);
-		this.#timer = setTimeout(() => void this.flush(), ms);
+		this.#timer = setTimeout(() => void this.#flush(false), ms);
 	}
 
 	#sendable(): [string, TChange][] {
 		return [...this.pending].filter(([key]) => !this.problems.has(key));
 	}
 
-	async #send(batch: [string, TChange][]): Promise<void> {
+	async #send(batch: [string, TChange][], explicit: boolean): Promise<void> {
 		this.saving = true;
 		for (const [key] of batch) this.#inflightKeys.add(key);
 		try {
 			const { results } = await this.#opts.save(batch.map(([, change]) => change));
+			if (results.length !== batch.length) {
+				// Unanswered changes would be resent forever; a server bug isn't fixed by retrying.
+				throw Object.assign(
+					new Error(`save returned ${results.length} results for ${batch.length} changes`),
+					{ status: 500, retry: false }
+				);
+			}
 			let merged = false;
 			results.forEach((result, i) => {
 				if (this.#settle(batch[i][0], batch[i][1], result)) merged = true;
@@ -293,17 +317,19 @@ export class ChangeQueue<TChange extends object> {
 			this.failing = false;
 			this.#failures = 0;
 			// A clean merge was queued with their value as the new baseline; send it straight away.
-			if (merged) queueMicrotask(() => void this.flush());
+			if (merged) queueMicrotask(() => void this.#flush(false));
 		} catch (error) {
 			this.#failures++;
-			if (!this.failing) this.#opts.onError?.(error);
+			if (!this.failing || explicit) this.#opts.onError?.(error);
 			this.failing = true;
 			const retry = this.#opts.shouldRetry ?? isRetryableError;
-			if (this.mode === 'autosave' && !this.#destroyed && retry(error)) {
+			const unanswered = (error as { retry?: unknown }).retry === false;
+			if (this.mode === 'autosave' && !this.#destroyed && !unanswered && retry(error)) {
 				clearTimeout(this.#timer);
+				this.retrying = true;
 				this.#timer = setTimeout(
-					() => void this.flush(),
-					retryDelay(this.#failures, this.#debounceMs / 2, this.#opts.retryMaxMs ?? 30_000)
+					() => void this.#flush(false),
+					retryDelay(this.#failures, this.#debounceMs, this.#opts.retryMaxMs ?? 30_000)
 				);
 			}
 		} finally {

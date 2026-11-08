@@ -7,8 +7,8 @@
 	/**
 	 * Navbar save controls for a page edited through a `ChangeQueue`. In manual mode: "Unsaved
 	 * changes", Discard (after a confirmation) and Save. In autosave: a status that never shifts the
-	 * buttons beside it ("Saving…", "All changes saved", a retrying note, or a pointer to the
-	 * conflict list). Extra actions (Delete, say) go in `children`, after these.
+	 * buttons beside it ("Saving…", "All changes saved", a retrying or "Couldn’t save" note, or a
+	 * pointer to the conflict list). Extra actions (Delete, say) go in `children`, after these.
 	 */
 	interface Labels {
 		save: string;
@@ -17,6 +17,8 @@
 		unsaved: string;
 		saved: string;
 		retrying: string;
+		/** Autosave failed and won't retry by itself (the server refused it). */
+		notSaved: string;
 		attention: string;
 		/** Toast after a manual save that went through. */
 		savedToast: string;
@@ -56,6 +58,7 @@
 		unsaved: 'Unsaved changes',
 		saved: 'All changes saved',
 		retrying: 'Not saved yet, retrying…',
+		notSaved: 'Couldn’t save',
 		attention: 'Needs your attention',
 		savedToast: 'Changes saved.',
 		problemsToast: 'Some changes need your attention (see the top).',
@@ -107,10 +110,10 @@
 		<span class="text-base-content/70 w-40 text-end text-sm" aria-live="polite">
 			{#if queue.problems.size > 0}
 				{text.attention}
-			{:else if queue.failing}
-				{text.retrying}
 			{:else if queue.saving}
 				{text.saving}
+			{:else if queue.failed}
+				{queue.retrying ? text.retrying : text.notSaved}
 			{:else if queue.saved && !queue.dirty}
 				{text.saved}
 			{/if}

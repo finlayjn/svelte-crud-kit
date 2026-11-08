@@ -1,4 +1,4 @@
-import { ChangeQueue, type ChangeResult } from './changeQueue.svelte.js';
+import { ChangeQueue, type ChangeQueueOptions, type ChangeResult } from './changeQueue.svelte.js';
 import type { SaveMode } from './types.js';
 
 /** One field of a record, set against the value it started from. */
@@ -40,8 +40,12 @@ export interface RecordEditorOptions<Row, F extends keyof Row & string> {
 	fromControl?: (field: F, value: unknown) => unknown;
 	/** Whether two values are the same (default {@link sameFieldValue}). */
 	equals?: (a: unknown, b: unknown) => boolean;
+	/** Merges a conflicting edit with the stored value (see `ChangeQueueOptions.merge`). */
+	merge?: ChangeQueueOptions<FieldChange<F>>['merge'];
 	onError?: (error: unknown) => void;
 	debounceMs?: number;
+	retryMaxMs?: number;
+	shouldRetry?: (error: unknown) => boolean;
 }
 
 /**
@@ -82,8 +86,11 @@ export class RecordEditor<Row, F extends keyof Row & string> {
 			key: (change) => change.field,
 			save: options.save,
 			equals: options.equals ?? sameFieldValue,
+			merge: options.merge,
 			onError: options.onError,
-			debounceMs: options.debounceMs
+			debounceMs: options.debounceMs,
+			retryMaxMs: options.retryMaxMs,
+			shouldRetry: options.shouldRetry
 		});
 		const draft = {} as { [K in F]: Row[K] };
 		for (const field of options.fields) {
@@ -102,6 +109,21 @@ export class RecordEditor<Row, F extends keyof Row & string> {
 
 	get saving(): boolean {
 		return this.queue.saving;
+	}
+
+	/** Whether the latest save failed and its changes are still unsaved. */
+	get failed(): boolean {
+		return this.queue.failed;
+	}
+
+	/** Changes the server didn't apply, waiting for the user (see `ChangeProblems`). */
+	get problems(): ChangeQueue<FieldChange<F>>['problems'] {
+		return this.queue.problems;
+	}
+
+	/** Whether leaving the page would lose something (for `useUnsavedGuard`). */
+	get blocksLeaving(): boolean {
+		return this.queue.blocksLeaving;
 	}
 
 	/** A field's value for its control. */
@@ -123,7 +145,8 @@ export class RecordEditor<Row, F extends keyof Row & string> {
 		return this.queue.flush();
 	}
 
-	destroy(): void {
-		this.queue.destroy();
+	/** Stops timers; in autosave mode pending changes are still sent unless `flush: false`. */
+	destroy(options?: { flush?: boolean }): void {
+		this.queue.destroy(options);
 	}
 }

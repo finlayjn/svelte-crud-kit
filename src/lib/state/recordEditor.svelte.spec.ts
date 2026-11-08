@@ -29,7 +29,9 @@ describe('RecordEditor', () => {
 		editor.draft.name = 'Main Street East';
 		expect(editor.draft.name).toBe('Main Street East');
 		await editor.flush();
-		expect(calls[0]).toEqual([{ field: 'name', value: 'Main Street East', baseline: 'Main Street' }]);
+		expect(calls[0]).toEqual([
+			{ field: 'name', value: 'Main Street East', baseline: 'Main Street' }
+		]);
 		expect(editor.dirty).toBe(false);
 	});
 
@@ -39,6 +41,17 @@ describe('RecordEditor', () => {
 		await editor.flush();
 		expect(editor.queue.problems.get('name')).toMatchObject({ theirs: 'Harbor View' });
 		expect(editor.draft.name).toBe('Mine');
+	});
+
+	it('exposes the queue state a SaveGroup and the unsaved guard read', async () => {
+		const { editor } = setup(() => {
+			throw new Error('offline');
+		});
+		editor.draft.name = 'Mine';
+		expect(editor.blocksLeaving).toBe(true);
+		await editor.flush();
+		expect(editor.failed).toBe(true);
+		expect(editor.problems.size).toBe(0);
 	});
 
 	it('treats blank, null and empty lists as the same value', () => {

@@ -143,10 +143,15 @@ describe('ChangeQueue', () => {
 		await vi.advanceTimersByTimeAsync(0);
 		expect(queue.failing).toBe(true);
 		expect(queue.failed).toBe(true);
-		await vi.advanceTimersByTimeAsync(1500);
+		expect(queue.retrying).toBe(true);
+		// Twice the debounce, then doubling.
+		await vi.advanceTimersByTimeAsync(2999);
+		expect(server.save).toHaveBeenCalledTimes(1);
+		await vi.advanceTimersByTimeAsync(1);
 		expect(server.save).toHaveBeenCalledTimes(2);
-		await vi.advanceTimersByTimeAsync(3000);
+		await vi.advanceTimersByTimeAsync(6000);
 		expect(server.save).toHaveBeenCalledTimes(3);
+		expect(queue.retrying).toBe(false);
 		expect(onError).toHaveBeenCalledTimes(1);
 		expect(queue.failing).toBe(false);
 		expect(queue.dirty).toBe(false);
@@ -159,6 +164,28 @@ describe('ChangeQueue', () => {
 		await vi.runAllTimersAsync();
 		expect(server.save).toHaveBeenCalledTimes(1);
 		expect(queue.failing).toBe(true);
+		expect(queue.retrying).toBe(false);
+	});
+
+	it('reports every failed explicit flush, not just the first', async () => {
+		const { queue, server, onError, set } = setup('manual');
+		server.save.mockRejectedValue(new Error('offline'));
+		set('title', 'Draft');
+		await queue.flush();
+		await queue.flush();
+		expect(onError).toHaveBeenCalledTimes(2);
+		expect(queue.failed).toBe(true);
+	});
+
+	it('treats a response with too few results as a failure and does not retry it', async () => {
+		const { queue, server, onError, set } = setup('autosave');
+		server.respondWith(() => []);
+		set('a', '1', '', true);
+		await vi.runAllTimersAsync();
+		expect(server.save).toHaveBeenCalledTimes(1);
+		expect(onError).toHaveBeenCalledTimes(1);
+		expect(queue.failed).toBe(true);
+		expect(queue.retrying).toBe(false);
 	});
 
 	it('lists a conflict and resends against their value when keeping mine', async () => {
