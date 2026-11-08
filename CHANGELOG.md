@@ -36,7 +36,9 @@ include breaking changes.
 - **RecordEditor** (`/state`) — one record edited field by field on a `ChangeQueue` (manual mode
   by default): a bindable `draft` like `EditDraft`'s, but changes carry the value they started
   from, so the server applies only changed fields and reports conflicts. `sameFieldValue` is the
-  shared comparison (blank, `null` and empty lists are equal; text is trimmed).
+  shared comparison (blank, `null` and empty lists are equal; text is trimmed). It exposes
+  `failed`, `problems` and `blocksLeaving`, so it works directly as a `SaveGroup` source and with
+  `useUnsavedGuard`.
 - **FormModal** — a `Modal` holding a form, with Cancel and a submit button; busy (and not
   dismissible) while `onsubmit` runs.
 - **Per-type field defaults** — `setFieldDefaults` also takes `select` (label placement, empty
@@ -45,13 +47,14 @@ include breaking changes.
 - **SaveActions**, **PendingRemovals**, **UnsavedHint** — navbar Save / Discard / status for a
   `ChangeQueue` page, "will be removed when you save" notes with Undo, and a "Not saved yet"
   note; every label is overridable, and `notify` / `confirmDiscard` turn off SaveActions' toasts
-  and Discard confirmation. `ChangeQueue.blocksLeaving` and `changeQueueLabel` cover the
-  unsaved-changes guard and the status text.
+  and Discard confirmation. In autosave, SaveActions says "retrying" only while a retry is
+  scheduled, and "Couldn't save" for a refused save. `ChangeQueue.blocksLeaving` and
+  `changeQueueLabel` cover the unsaved-changes guard and the status text.
 - **PanelBoundary** — keeps a panel's rendering error from taking down the page, with Try again;
   message, retry label, error handler and the whole failure UI are overridable.
 - **RowButton** — the button version of `RowLink`, for `DataTable` rows that open a dialog.
 - **TokenSelect** (`/fields`) — a chip multi-select with an "add" dropdown; a `chip` snippet
-  renders custom chip content.
+  renders custom chip content. Focus stays on the control when a chip is added or removed.
 - **EdgeShadow** — the shared edge shadow behind the navbar and `ScrollArea`.
 - **errorMessage / reportError** and **reload** (`/state`) — show a refused request's message or a
   fallback while logging the cause; rerun `load`s by `depends` key after a command.
@@ -61,7 +64,8 @@ include breaking changes.
 - **ChangeQueue** — keyed, compare-and-set edits for records several people edit: conflicts,
   refused values and removed records collect in `problems` for `keepMine` / `useTheirs`, with an
   optional `merge` (e.g. text) and `rebase`; manual or autosave timing, one request at a time,
-  retry with backoff, and `SaveSource` for `SaveGroup`.
+  retry with backoff (`retrying` says whether one is scheduled), `onError` for every failed Save,
+  and `SaveSource` for `SaveGroup`.
 - **ChangeProblems** — lists a `ChangeQueue`'s problems with Use theirs / Keep mine per item and
   for all; every label is overridable and `level` sets the heading level.
 - **Modal** — a daisyUI modal on a native `<dialog>`: bindable `open`, `title`, `description`,
@@ -105,7 +109,8 @@ include breaking changes.
 - **AppShell** — leaving a route clears the navbar `actions` and `search` before the new page
   renders. Kit hands the old page the new page's `data` before unmounting it, so its navbar
   snippets re-rendered with the wrong data (one reading a field the new data lacks threw, and the
-  navigation failed). `ShellState.clearSlots()` is the new method behind it.
+  navigation failed). Slots set by a layout that stays mounted come back after the navigation.
+  `ShellState.clearSlots()` and `restoreSlots()` are the new methods behind it.
 - **isActiveLink** — a malformed `%` escape in the URL no longer throws (it crashed every
   `NavItem` / `NavGroup` during SSR).
 - **DataTable** — Space and Enter in a row's inputs and buttons are no longer hijacked; the size
@@ -139,6 +144,27 @@ include breaking changes.
   directly).
 - Docs: `id` accepts numbers only; `optionalDate` checks the format only; `createListUrl`
   recommends a server `load` for URL-tied data.
+
+### Known issues
+
+Planned improvements, not yet fixed:
+
+- **Toaster** — the toast regions are created along with the first toast, so some screen readers
+  skip announcing it (most often a success or info toast). They should stay mounted.
+- **Fixed English text** — Pagination, DataTable, Modal, Navbar, Toaster and ListSearch have
+  built-in labels ("Per page", "Sort by", "Close", "Menu", "Dismiss", "Clear search") that can't
+  be overridden yet, unlike `SaveActions` and `ChangeProblems`.
+- **`RecordEditor.draft` types** — fields are typed as the stored value, but read as the control
+  value (`null` reads as `''`, or whatever `toControl` returns).
+- **`class` props** — older components take `class` as a string; newer ones take `ClassValue`.
+- **useUnsavedGuard** — after "Discard", a canceled `goto` is replayed without its original
+  options (`replaceState`, `state`, `invalidate`).
+- **Toaster under a later modal** — a sticky toast shown before a modal opens sits under the modal
+  until the next toast arrives.
+- **ChangeProblems** — "Yours (not saved)" shows the change as it was when the conflict appeared,
+  not edits made since (Keep mine sends the current one).
+- **`setFieldDefaults`** — `readonly` defaults have no `labelPlacement`, unlike `select` and
+  `radio`.
 
 ## 0.2.0
 

@@ -20,8 +20,8 @@ npm i @finlayjn/svelte-crud-kit
 
 Peer dependencies (you almost certainly already have these in a SvelteKit app):
 `svelte` (5.29+), `@sveltejs/kit` (2.12+), and — if you use the styled components —
-`tailwindcss` + `daisyui`. The valibot schemas in `@finlayjn/svelte-crud-kit/list` additionally
-use `valibot`; nothing else needs it.
+`tailwindcss` + `daisyui`, and `valibot`, which `@finlayjn/svelte-crud-kit/list` imports (its
+schemas and `parseListParams`); the other entry points don't use it.
 
 ### Tailwind
 
@@ -155,7 +155,7 @@ back-navigation — the nav content stays entirely yours.
 			<NavItem href="/widgets">Widgets</NavItem>
 			<NavItem href="/gadgets">
 				Gadgets
-				{#snippet badge()}<span class="badge badge-sm">12</span>{/snippet}
+				{#snippet badge()}<span class="badge badge-neutral badge-sm">12</span>{/snippet}
 			</NavItem>
 		</NavGroup>
 
@@ -344,7 +344,9 @@ values and controls, and each change carries the value it started from, so the s
 only changed fields (compare them with `sameFieldValue`).
 
 On the server, apply a change only if the stored value still equals its `baseline`, and answer
-each change in order. Use `sameFieldValue` on both sides so they agree on what changed:
+each change in order. Use `sameFieldValue` on both sides so they agree on what changed. (`/state`
+is built by SvelteKit, since it uses runes and `$app/*`: import it from loads, remote functions and
+hooks, not from plain Node scripts.)
 
 ```ts
 import {
@@ -463,10 +465,8 @@ import { createThemes } from '@finlayjn/svelte-crud-kit/theme';
 export const themes = createThemes({ light: 'light', dark: 'dark' });
 ```
 
-```html
-<!-- src/app.html -->
-<html lang="en" data-theme="%theme%"></html>
-```
+In `src/app.html`, give the root element a placeholder for the server to fill:
+`<html lang="en" data-theme="%theme%">`.
 
 ```ts
 // src/hooks.server.ts
