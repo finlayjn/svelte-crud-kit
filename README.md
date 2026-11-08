@@ -281,6 +281,11 @@ const queue = new ChangeQueue<Change>({
 queue.setValue({ kind: 'field', field: 'title', value, baseline: record.title });
 ```
 
+`RecordEditor` is a `ChangeQueue` for one record edited field by field (manual Save by default):
+`editor.draft.name` binds like `EditDraft`'s, `toControl` / `fromControl` convert between stored
+values and controls, and each change carries the value it started from, so the server writes
+only changed fields (compare them with `sameFieldValue`).
+
 For the page around a `ChangeQueue`: `SaveActions` (navbar Save, Discard and status),
 `ChangeProblems` (the conflict list), `PendingRemovals` and `UnsavedHint` (manual-mode notes), and
 `useUnsavedGuard(() => queue.blocksLeaving)`.
