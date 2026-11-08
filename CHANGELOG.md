@@ -33,6 +33,10 @@ include breaking changes.
 
 ### Added
 
+- **RecordEditor** (`/state`) — one record edited field by field on a `ChangeQueue` (manual mode
+  by default): a bindable `draft` like `EditDraft`'s, but changes carry the value they started
+  from, so the server applies only changed fields and reports conflicts. `sameFieldValue` is the
+  shared comparison (blank, `null` and empty lists are equal; text is trimmed).
 - **FormModal** — a `Modal` holding a form, with Cancel and a submit button; busy (and not
   dismissible) while `onsubmit` runs.
 - **Per-type field defaults** — `setFieldDefaults` also takes `select` (label placement, empty

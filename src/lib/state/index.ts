@@ -42,6 +42,12 @@ export {
 	type ReportErrorOptions
 } from './errors.js';
 export { reload } from './reload.js';
+export {
+	RecordEditor,
+	sameFieldValue,
+	type FieldChange,
+	type RecordEditorOptions
+} from './recordEditor.svelte.js';
 export { SaveGroup, type SaveSource } from './saveGroup.svelte.js';
 export { saveIndicatorLabel, changeQueueLabel, type SaveIndicatorState } from './saveIndicator.js';
 export {
