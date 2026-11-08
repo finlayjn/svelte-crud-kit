@@ -68,6 +68,8 @@
 
 	afterNavigate((nav) => {
 		shell.recordNavigation(nav);
+		// A layout's slots, cleared with the old page's, come back once the old page has unmounted.
+		shell.restoreSlots();
 		drawerOpen = false;
 		if (!main || !nav.from || !nav.to) return;
 		if (nav.from.url.pathname === nav.to.url.pathname) return;

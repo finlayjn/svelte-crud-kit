@@ -83,6 +83,10 @@ export class ShellState {
 
 	/** Owner tokens for the navbar slots, so only the component that set a slot clears it. */
 	#slotOwners: Record<'actions' | 'search', object | null> = { actions: null, search: null };
+	/** Slots taken away by {@link clearSlots}, kept until their owner unmounts or reclaims. */
+	#parkedSlots: Partial<
+		Record<'actions' | 'search', { value: Snippet | undefined; owner: object }>
+	> = {};
 
 	/** True when the current route has a logical parent (declared via `page.data.back` or derived). */
 	#hasParent = $derived(
@@ -109,22 +113,45 @@ export class ShellState {
 	claimSlot(slot: 'actions' | 'search', value: Snippet | undefined, owner: object): void {
 		this[slot] = value;
 		this.#slotOwners[slot] = owner;
+		delete this.#parkedSlots[slot];
 	}
 
 	/**
 	 * Clears both navbar slots, whoever holds them. `AppShell` calls this when a navigation changes
 	 * route: Kit passes the next page's `data` to the old page before unmounting it, and the old
 	 * page's slot snippets (rendered here, outside the page) would otherwise re-render with data
-	 * shaped for another page.
+	 * shaped for another page. Each cleared slot is parked: {@link restoreSlots} puts it back after
+	 * the navigation if its owner is still mounted (a layout) and nothing else took the slot.
 	 */
 	clearSlots(): void {
+		for (const slot of ['actions', 'search'] as const) {
+			const owner = this.#slotOwners[slot];
+			if (owner) this.#parkedSlots[slot] = { value: this[slot], owner };
+		}
 		this.actions = undefined;
 		this.search = undefined;
 		this.#slotOwners = { actions: null, search: null };
 	}
 
+	/**
+	 * Puts back the slots {@link clearSlots} parked whose owner is still mounted, unless another
+	 * component claimed the slot meanwhile (the new page wins). `AppShell` calls it after each
+	 * navigation.
+	 */
+	restoreSlots(): void {
+		for (const slot of ['actions', 'search'] as const) {
+			const parked = this.#parkedSlots[slot];
+			if (!parked) continue;
+			delete this.#parkedSlots[slot];
+			if (this.#slotOwners[slot]) continue;
+			this[slot] = parked.value;
+			this.#slotOwners[slot] = parked.owner;
+		}
+	}
+
 	/** Clears a navbar slot, but only if `owner` still holds it. */
 	releaseSlot(slot: 'actions' | 'search', owner: object): void {
+		if (this.#parkedSlots[slot]?.owner === owner) delete this.#parkedSlots[slot];
 		if (this.#slotOwners[slot] !== owner) return;
 		this[slot] = undefined;
 		this.#slotOwners[slot] = null;
