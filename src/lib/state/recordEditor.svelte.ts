@@ -36,6 +36,8 @@ export interface RecordEditorOptions<Row, F extends keyof Row & string> {
 	mode?: SaveMode;
 	/** A saved value as its form control shows it (default: `null` and `undefined` become ''). */
 	toControl?: (field: F, value: unknown) => unknown;
+	/** A control's value as the change sends it (default: as is), e.g. a select's string to an id. */
+	fromControl?: (field: F, value: unknown) => unknown;
 	/** Whether two values are the same (default {@link sameFieldValue}). */
 	equals?: (a: unknown, b: unknown) => boolean;
 	onError?: (error: unknown) => void;
@@ -67,12 +69,14 @@ export class RecordEditor<Row, F extends keyof Row & string> {
 
 	#data: () => Row;
 	#toControl: (field: F, value: unknown) => unknown;
+	#fromControl: (field: F, value: unknown) => unknown;
 
 	constructor(options: RecordEditorOptions<Row, F>) {
 		this.#data = options.data;
 		this.#toControl =
 			options.toControl ??
 			((_field, value) => (value === null || value === undefined ? '' : value));
+		this.#fromControl = options.fromControl ?? ((_field, value) => value);
 		this.queue = new ChangeQueue<FieldChange<F>>({
 			mode: options.mode ?? 'manual',
 			key: (change) => change.field,
@@ -106,9 +110,13 @@ export class RecordEditor<Row, F extends keyof Row & string> {
 		return this.#toControl(field, change ? change.value : this.#data()[field]);
 	}
 
-	/** Records an edit against the saved value. */
+	/** Records an edit (a control's value) against the saved value. */
 	set(field: F, value: unknown): void {
-		this.queue.setValue({ field, value, baseline: this.#data()[field] });
+		this.queue.setValue({
+			field,
+			value: this.#fromControl(field, value),
+			baseline: this.#data()[field]
+		});
 	}
 
 	flush(): Promise<void> {
