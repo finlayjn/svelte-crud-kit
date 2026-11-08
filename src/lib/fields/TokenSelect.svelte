@@ -2,7 +2,8 @@
 	lang="ts"
 	generics="Value extends string | number, Option extends { value: Value; label: string }"
 >
-	import type { Snippet } from 'svelte';
+	import { tick, type Snippet } from 'svelte';
+	import type { Attachment } from 'svelte/attachments';
 
 	/**
 	 * A multi-select as chips: a dropdown offers the options not chosen yet, picking one adds a
@@ -65,13 +66,25 @@
 		onchange?.();
 	}
 
-	function remove(target: Value) {
+	let root: HTMLFieldSetElement | undefined;
+	const capture: Attachment<HTMLFieldSetElement> = (node) => {
+		root = node;
+		return () => (root = undefined);
+	};
+
+	/** Removes a chip and moves focus to the next chip's remove button (or the previous, or the select). */
+	async function remove(target: Value) {
+		const index = selected.findIndex((o) => o.value === target);
 		value = value.filter((v) => v !== target);
 		onchange?.();
+		await tick();
+		const buttons = root?.querySelectorAll<HTMLButtonElement>('[data-token-remove]') ?? [];
+		const next = buttons[Math.min(index, buttons.length - 1)];
+		(next ?? root?.querySelector('select'))?.focus();
 	}
 </script>
 
-<fieldset class={['fieldset', className]}>
+<fieldset class={['fieldset', className]} {@attach capture}>
 	<legend class="fieldset-legend">{label}</legend>
 
 	{#if selected.length}
@@ -85,6 +98,7 @@
 						<button
 							type="button"
 							class="cursor-pointer opacity-70 hover:opacity-100"
+							data-token-remove
 							aria-label={removeLabel(option)}
 							onclick={() => remove(option.value)}
 						>
@@ -101,7 +115,8 @@
 	{#if !disabled}
 		<label class="select w-full">
 			<span class="label">{addLabel}</span>
-			<select onchange={add} disabled={available.length === 0}>
+			<!-- Never disabled: picking the last option would drop focus to <body>. -->
+			<select onchange={add}>
 				<option value="">{available.length === 0 ? allAddedLabel : placeholder}</option>
 				{#each available as option (option.value)}
 					<option value={String(option.value)}>{option.label}</option>
