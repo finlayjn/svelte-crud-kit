@@ -29,7 +29,7 @@ type Trigger = 'user' | 'timer' | 'retry';
 
 /**
  * A multi-key save engine for editing several independent things on one page — a collection of rows
- * (service log, hearings, …) or the distinct fields of a record — each saved on its own debounce.
+ * (line items, comments, …) or the distinct fields of a record — each saved on its own debounce.
  * It is the many-keyed sibling of {@link import('./autosave.svelte.js').AutosaveController} (which
  * saves a single record as one patch): here every key debounces, flushes, and reports independently,
  * while `state` / `dirty` aggregate across all of them for a single "Saving… / All changes saved"

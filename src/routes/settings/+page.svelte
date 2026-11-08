@@ -52,9 +52,9 @@
 		text: string;
 	}
 	let notes = $state<Note[]>([
-		{ id: 1, text: 'Follow up with the client' },
-		{ id: 2, text: 'Confirm the hearing date' },
-		{ id: 3, text: 'File the intake form' }
+		{ id: 1, text: 'Call the supplier' },
+		{ id: 2, text: 'Confirm the delivery date' },
+		{ id: 3, text: 'File the order form' }
 	]);
 	const tracker = new SaveTracker({
 		mode: 'autosave',

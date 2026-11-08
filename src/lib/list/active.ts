@@ -3,7 +3,7 @@ import { LIST_VIEW_PARAMS } from './constants.js';
 /**
  * Active-link matching for nav sidebars, aware of the list-view params.
  *
- * A sidebar link like `/clients?status=Detained` should stay highlighted while you page, sort, or
+ * A sidebar link like `/orders?status=open` should stay highlighted while you page, sort, or
  * search *within* that list — i.e. when the URL also carries `?page=2&sort=name&q=…`. So the match
  * compares the pathname and the *filter* params, ignoring the pagination/sort/search params the list
  * view owns (see {@link LIST_VIEW_PARAMS}).
