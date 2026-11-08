@@ -89,15 +89,14 @@
 		}
 	},
 	"devDependencies": {
-		"@eslint/compat": "^2.1.1",
-		"@eslint/js": "^9.39.2",
+		"@eslint/js": "^10.0.1",
 		"@sveltejs/adapter-auto": "^6.0.0",
 		"@sveltejs/kit": "^2.70.4",
 		"@sveltejs/package": "^2.5.4",
 		"@sveltejs/vite-plugin-svelte": "^7.3.1",
 		"@tailwindcss/vite": "^4.3.5",
 		"daisyui": "^5.7.50",
-		"eslint": "^9.39.2",
+		"eslint": "^10.14.0",
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-svelte": "^3.24.1",
 		"globals": "^17.14.0",
